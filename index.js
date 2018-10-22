@@ -65,7 +65,7 @@ app.get('/frame', function (req, res) {
     // var frame = exec('python3 node_helper.py -i capture');
     // console.log('frame OK');
 
-    const reading = createReadStream("~/temp.png");
+    const reading = createReadStream("/home/pi/temp.png");
     console.log('streaming')
     reading.pipe(res);
 });
