@@ -7,7 +7,7 @@ app.get('/', (req, res) => {
     res.send('An alligator approaches!');
 });
 
-app.get('/tomafoto', cors, function(req, res) {
+app.get('/tomafoto', function(req, res) {
     res.writeHead(200, { 'Content-Type': 'image/jpeg' });
     var args = ["--nopreview", "--timeout", "1", "-o", "-"];
 
