@@ -1,4 +1,4 @@
-import sys, getopt, socket
+import sys, getopt, socket, time
 def main(argv):
     inputfile = ''
     try:
@@ -23,8 +23,9 @@ def main(argv):
         a=s.recv(1024).decode('utf-8')
     except:
         raise ConnectionError('time out')
+    time.sleep(2)
     print(a)
-    return a
+    #return a
     sys.exit()
 
 if __name__ == "__main__":
