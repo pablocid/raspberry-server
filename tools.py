@@ -310,7 +310,7 @@ class CvCamera(Image):
         if self.live == False:
             #print('false', self.name_save) ##
             buf = self.rawCapture[184:904, 320:1600]
-            cv2.imwrite(self.name_save+'.png', buf)
+            cv2.imwrite('/home/pi/temp.png', buf)
 
 
 
