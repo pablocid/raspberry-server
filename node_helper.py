@@ -23,7 +23,7 @@ def main(argv):
         a=s.recv(1024).decode('utf-8')
     except:
         raise ConnectionError('time out')
-    time.sleep(2)
+    time.sleep(0.5)
     print(a)
     #return a
     sys.exit()
