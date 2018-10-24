@@ -5,474 +5,327 @@ import cv2
 import math
 import sys
 import time
-#from correction_4 import perspective_check, virtual_area
-from ar_markers import detect_markers
+from math import atan2, sin, cos, pi, sqrt
+
 from kivy.uix.image import Image
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
-from kivy.uix.widget import Widget
-from kivy.uix.floatlayout import FloatLayout
-from kivy.core.window import Window
-from kivy.uix.scrollview import ScrollView
-from picamera.array import PiRGBArray
+
+from ar_markers import detect_markers
 from picamera import PiCamera
 
-def options_load(dir):
-    if dir[::-1][0]!='/':
-        dir=dir+'/'
-    temp = []
-    for file in os.listdir(dir):
-        temp.append([file[:file.rfind('.')]])
-        file = open(dir + file, 'r')
-        new = file.read()
-        file.close()
-        new = new.split('>')
-        for s in new:
-            if len(s)==0:
-                continue
-            temp[len(temp) - 1].append([])
-            s=[i.split('\t') for i in s.split('\n') if len(i) != 1]
-            temp[len(temp)-1][len(temp[len(temp)-1])-1].append(s[0][0])
-            for i in s[1:]:
-                i=[l for l in i if len(l)!=0]
-                if len(i)!=0:
-                    temp[len(temp) - 1][len(temp[len(temp)-1])-1].append(i)
-    return temp
+def order_points(pts):
+    rect = np.zeros((4, 2), dtype="float32")
+    s = pts.sum(axis=1)
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+    return rect
 
-def options_save(dir, options_loaded):
-    if dir[::-1][0]!='/':
-        dir=dir+'/'
-    for n in options_loaded:
-        temp=[n[0]]
-        file=open(dir+n[0]+'.tsv', 'w')
-        file.close()
-        file = open(dir+n[0] + '.tsv', 'a')
-        for i in n[1:]:
-            file.write('>'+i[0]+'\n'+'\n'.join(['\t'.join(s) for s in i[1:]])+'\n')
-        file.close()
+def four_point_transform(image, pts):
+    rect = order_points(pts)
+    (tl, tr, br, bl) = rect
+    widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+    widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+    maxWidth = max(int(widthA), int(widthB))
+    heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+    heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+    maxHeight = max(int(heightA), int(heightB))
+    dst = np.array([
+        [0, 0],
+        [maxWidth - 1, 0],
+        [maxWidth - 1, maxHeight - 1],
+        [0, maxHeight - 1]], dtype="float32")
+    M = cv2.getPerspectiveTransform(rect, dst)
+    warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+    return warped
 
-def contour_save(contours, new_label=None):
-    new=[]
-    for n in contours:
-        if new_label!=None:
-            new.append('\t'.join([new_label] + ['_'.join(i) for i in n[:, 0, :].astype('unicode_').tolist()]))
-        else:
-            new.append('\t'.join([config_get(1)]+['_'.join(i) for i in n[:,0,:].astype('unicode_').tolist()]))
-    return '\n'.join(new)
+def line_intersection(line1, line2):
+    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+    def det(a, b):
+        return a[0] * b[1] - a[1] * b[0]
+    div = det(xdiff, ydiff)
+    if div == 0:
+        return
+    d = (det(*line1), det(*line2))
+    x = det(d, xdiff) / div
+    y = det(d, ydiff) / div
+    return int(x), int(y)
 
-def contour_load(path, fruit_dict=False):
-    file=open(path, 'r')
-    temp=file.read()
-    file.close()
-    temp=[i.split('\t') for i in temp.split('\n') if len(i)!=1]
-    if fruit_dict:
-        temp_d=[]
-    if len(temp[0])==1:
-        if fruit_dict:
-            return [None, None]
-        else:
-            return []
+def line_length(linea):
+    return sqrt(((linea[1][0]-linea[0][0])**2)+((linea[1][1]-linea[0][1])**2))
+
+def point_proyection(point, rad):
+    x = int(point[0] + (3500 * cos(rad)))
+    y = int(point[1] + (3500 * sin(rad)))
+    return (int(x), int(y))
+
+def line_newPoint(point, length,rad):
+    x = int(point[0] + (length * cos(rad)))
+    y = int(point[1] + (length * sin(rad)))
+    return (int(x), int(y))
+
+def line_angle(line):
+    return atan2(line[1][1] - line[0][1], line[1][0] - line[0][0])
+
+def perspective_check(img):
+    id_list=[]
+    x_center = []
+    y_center = []
+    markers = detect_markers(img)
+
+    counter=0
+
+    if len(markers)>0:
+        for n in range(len(markers)):
+            n -= counter
+            if markers[n].id not in [1742, 2713, 3116]:
+                return [False, []]
+            if markers[n].id not in id_list:
+                id_list.append(markers[n].id)
+                x_center.append(markers[n].center[0])
+                y_center.append(markers[n].center[1])
+            else:
+                del(markers[n])
+                counter+=1
+        if len(id_list)!=3:
+            return [False, []]
     else:
-        for n in range(len(temp)):
-            if fruit_dict:
-                temp_d.append(temp[n][0])
-            temp[n]=temp[n][1:]
-            temp[n]=np.array([i.split('_') for i in temp[n]]).astype('int64').reshape(len(temp[n]), 1, 2)
-        if fruit_dict:
-            return [temp, temp_d]
-        else:
-            return temp
+        return [False, []]
 
-def config_set(cat=None, to_set=None):
-    base = sys.argv[0][:sys.argv[0].rfind('/')]
-    if cat==None:
-        if to_set=='create':
-            filess=open(base+'/fruits.config', 'w')
-            filess.write('\n\n\n\n')
-            filess.close()
+    x_center = int(round(sum(x_center) / len(x_center),0))
+    y_center = int(round(sum(y_center) / len(y_center),0))
+
+    uno={}
+    tres={}
+
+    marker=markers[id_list.index(2713)]
+
+    counter = 0
+    temp = 100000
+
+    for c in marker.contours[:, 0, :]:
+        temp_b = line_length([[x_center, y_center], c])
+        if temp_b < temp:
+            point = counter
+            temp = temp_b
+        counter += 1
+
+    uno['a'] = marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point], 0, :]
+    tres['a'] = marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point], 0, :]
+    temp = 100000
+    counter = 0
+    for c in marker.contours[:, 0, :]:
+        if counter != point and counter != {0: 2, 1: 3, 2: 0, 3: 1}[point]:
+            temp_b = line_length([c, markers[id_list.index(1742)].center])
+            if temp_b < temp:
+                point_b = counter
+                temp = temp_b
+        counter += 1
+    uno['b'] = marker.contours[point_b, 0, :]
+    tres['b'] = marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point_b], 0, :]
+    marker = markers[id_list.index(1742)]
+    counter = 0
+    counter_fuga=0
+    temp = 100000
+    temp_fuga=100000
+    for c in marker.contours[:, 0, :]:
+        temp_b = line_length([[x_center, y_center], c])
+        temp_b_fuga = line_length([uno['b'], c])
+        if temp_b < temp:
+            point = counter
+            temp = temp_b
+        if temp_b_fuga < temp_fuga:
+            point_fuga=counter_fuga
+            temp_fuga = temp_b_fuga
+        counter_fuga+=1
+        counter += 1
+    uno['c'] = marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point], 0, :]
+    uno['fuga']=line_intersection([uno['a'], uno['c']], [tres['b'], marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point_fuga], 0, :]])
+
+    marker = markers[id_list.index(3116)]
+    counter = 0
+    counter_fuga = 0
+    temp = 100000
+    temp_fuga = 100000
+    for c in marker.contours[:, 0, :]:
+        temp_b = line_length([[x_center, y_center], c])
+        temp_b_fuga = line_length([tres['b'], c])
+        if temp_b < temp:
+            point = counter
+            temp = temp_b
+        if temp_b_fuga < temp_fuga:
+            point_fuga = counter_fuga
+            temp_fuga = temp_b_fuga
+        counter_fuga += 1
+        counter += 1
+    tres['c'] = marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point], 0, :]
+    tres['fuga'] = line_intersection([tres['a'], tres['c']],
+                                    [uno['b'], marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point_fuga], 0, :]])
+    return [True, [uno, tres]]
+
+def virtual_area(largo, alto, diccionario):
+    """
+    :param largo: en cm
+    :param alto: en cm
+    :param diccionario: coordenadas abc para largo y alto
+    :return: cuatro puntos
+    """
+    #alto = round(((6.75*alto)-21.2625)/(3.6*alto), 2)
+    #largo = round(((6.75*largo)-21.2625)/(3.6*largo), 2)
+
+    #alto = round(((9.5 * alto) - 34.2) / (0+(5.9 * alto)), 2)
+    #largo = round(((9.5 * largo) - 34.2) / (0 + (5.9 * largo)), 2)
+
+    alto = round((56.05+(9.5*alto)) / (56.05+(5.9*alto)), 4)
+    largo = round((56.05 + (9.5 * largo)) / (56.05 + (5.9 * largo)), 4)
+
+    largo = ((line_length([diccionario[0]['a'], diccionario[0]['c']])*line_length([diccionario[0]['b'], diccionario[0]['c']]))*(1-largo))/((largo*line_length([diccionario[0]['b'], diccionario[0]['c']]))-line_length([diccionario[0]['a'], diccionario[0]['c']]))
+    alto = ((line_length([diccionario[1]['a'], diccionario[1]['c']]) * line_length(
+        [diccionario[1]['b'], diccionario[1]['c']])) * (1 - alto)) / (
+                        (alto * line_length([diccionario[1]['b'], diccionario[1]['c']])) - line_length(
+                    [diccionario[1]['a'], diccionario[1]['c']]))
+    alto = line_newPoint(diccionario[1]['c'], alto, line_angle([diccionario[1]['a'], diccionario[1]['c']]))
+    largo = line_newPoint(diccionario[0]['c'], largo, line_angle([diccionario[0]['a'], diccionario[0]['c']]))
+
+    if diccionario[1]['fuga']==None:
+        final_one=[largo, point_proyection(largo, line_angle([diccionario[1]['a'], diccionario[1]['c']]))]
     else:
-        if to_set!=None:
-            filess=open(base + '/fruits.config', 'r')
-            conf=filess.read().split('\n')
-            filess.close()
-            conf[cat]=to_set
-            filess = open(base+'/fruits.config', 'w')
-            filess.write('\n'.join(conf))
-            filess.close()
-
-def config_get(cat=None):
-    base = sys.argv[0][:sys.argv[0].rfind('/')]
-    filess = open(base+'/fruits.config', 'r')
-    conf = filess.read().split('\n')
-    filess.close()
-    if cat!=None:
-        if cat==3:
-            return list(map(int,conf[3].split('_')))
-        else:
-            return conf[cat]
+        final_one=[largo, diccionario[1]['fuga']]
+    if diccionario[0]['fuga']==None:
+        final_two=[alto, point_proyection(alto, line_angle([diccionario[0]['a'], diccionario[0]['c']]))]
     else:
-        return conf
+        final_two=[alto, diccionario[0]['fuga']]
+    final = line_intersection(final_one, final_two)
+    return [tuple(diccionario[0]['a']), largo, final, alto]
 
-def list_editor(lista_full_dir, load=False, add=None, delete=None):
-    if load:
-        file = open(lista_full_dir, 'r')
-        list_whole = [n for n in file.read().split('\n')[::-1] if len(n) != 0]
-        file.close()
-        return list_whole
-    if add!=None:
-        file = open(lista_full_dir, 'a')
-        file.write('\n'+add)
-        file.close()
-    if delete!=None:
-        file = open(lista_full_dir, 'r')
-        list_whole = [n for n in file.read().split('\n')[::-1] if len(n) != 0]
-        file.close()
-        list_whole.remove(delete)
-        file = open(lista_full_dir, 'w')
-        file.write('\n'.join(list_whole))
-        file.close()
-
-def file_append(list_file, list_labels):
-    if len(list_labels)!=0:
-        home = os.path.expanduser("~")
-        file=open(home+'/fruit_data/'+list_file+'.list', 'a')
-        file.write('\n'.join(list_labels)+'\n')
-        file.close()
-
-def in_colors(img, contour, tmpl_parsed, pixel_factor=None, color_reduction=None, all_template=None):
-    if color_reduction!=None:
-        k = 32
-        lut = np.zeros((256), np.uint8)
-        espacio = np.linspace(0, 255, k).astype('uint8')
-        espacio_dos = np.linspace(0, 255, k + 1).astype('uint8')
-        for n in range(len(espacio_dos)):
-            if n == 0:
-                continue
-            lut[espacio_dos[n - 1]:espacio_dos[n] + 1] = espacio[n - 1]
-        img[:, :, 0] = lut[img[:, :, 0]]
-        img[:, :, 1] = lut[img[:, :, 1]]
-        img[:, :, 2] = lut[img[:, :, 2]]
-    d=contour.copy()
-    d[:,:,0]=d[:,:,0]-min(d[:,:,0])
-    d[:, :, 1] = d[:, :, 1] - min(d[:, :, 1])
-    masked=np.zeros((img.shape[0], img.shape[1]), np.uint8)
-    cv2.drawContours(masked, [d], -1, 255, -1)
-    masked=cv2.bitwise_and(img, img, mask=masked)
-    temp=np.zeros(masked.shape[:2], np.uint8)
-    for n in tmpl_parsed:
-        boundaries_c = [(
-            [
-                0,
-                range(0, 257, 8)[n[1]],
-                range(0, 257, 8)[::-1][n[0] + 1]
-            ],  # lower
-            [
-                250 * n[2],
-                range(0, 257, 8)[n[1] + 1] - 1,
-                range(0, 257, 8)[::-1][n[0]] - 1
-            ]  # upper
-        )]
-        for (lower, upper) in boundaries_c:
-            lower = np.array(lower, dtype="uint8")
-            upper = np.array(upper, dtype="uint8")
-        temp = cv2.add(temp, cv2.inRange(masked, lower, upper))
-
-    if pixel_factor != None:
-        valores=np.count_nonzero(temp) / pixel_factor
-    else:
-        valores=np.count_nonzero(temp)
-
-    if all_template!=None:
-        for n in range(len(valores)):
-            total=valores[n][all_template]
-            counter=0
-            for v in range(len(valores[n])):
-                v=v+counter
-                valores[n].insert(v+1, (valores[n][v]/total)*100)
-                counter=counter+1
-    return valores
-
-def template_reader(path):
-    filess = open(path, 'r')
-    filess_tab = filess.read().replace('\n', '\t').split('\t')
-    if filess_tab[len(filess_tab) - 1] == '':
-        filess_tab = filess_tab[:len(filess_tab) - 1]
-    filess.close()
-    filess_tab = [float(n) for n in filess_tab]
-    filess_tab = np.asarray(filess_tab)
-    chromatic_arr = filess_tab.reshape(32, 32)
-    filess_tab = np.argwhere(chromatic_arr > 0 )
-    n_arr = []
-    for (x, y) in filess_tab:
-        n_arr.append([x, y, chromatic_arr[x][y]])
-    return n_arr
-
-def live_feed_roi(img, thresh, stbl_f=0, live=True):
-    all = np.array([[[0,0]], [[0, img.shape[0]]], [[img.shape[1], img.shape[0]]], [[img.shape[1], 0]]])
+def live_feed_roi(img, thresh):
+    new_x = 640 / img.shape[1]
+    frame = img.copy()
+    img = cv2.resize(img, None, None, fx=new_x, fy=new_x,
+                              interpolation=cv2.INTER_LINEAR)
+    all = np.array([[[0, 0]], [[0, img.shape[0]]], [[img.shape[1], img.shape[0]]], [[img.shape[1], 0]]])
     x_a, y_a, w_a, h_a = cv2.boundingRect(all)
-    all_area=w_a*h_a
+    all_area = w_a * h_a
     img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    check=False
-    if live:
-        img_roi = cv2.GaussianBlur(img_roi, (3, 3), 0)
-        img_roi = cv2.Canny(img_roi, 20, 260)
-        M = np.ones((2,2), np.uint8)
-        img_roi = cv2.dilate(img_roi, M, iterations=2)
-        img_roi = cv2.erode(img_roi, M, iterations=1)
-        markers=detect_markers(img)
-        if len(markers)>0:
-            marker=markers[0].get_contours()
-        else:
-            marker=None
-        _, cnts, _ = cv2.findContours(img_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    #else:
-    #    img_roi = cv2.GaussianBlur(img_roi, (3, 3), 0)
-    #    img_roi = cv2.Canny(img_roi, 20, 260)
-    #    M = np.ones((2,2), np.uint8)
-    #    img_roi = cv2.dilate(img_roi, M, iterations=2)
-    #    img_roi = cv2.erode(img_roi, M, iterations=1)
+    check = False
 
-    if live:
-        counter=0
-        for c in cnts:
-            x, y, w, h = cv2.boundingRect(c)
-            if (w * h) > (all_area * thresh):
-                if (x - 1) <= 0 or (y - 1) <= 0 or (x + w + 1) >= w_a or (y + h + 1) >= h_a:
-                    cv2.drawContours(img, [c], -1, (0,0,255), -1)
-                    check=False
-                else:
-                    cv2.drawContours(img, [c], -1, (0, 255, 0), -1)
-                    counter=counter+1
-        if counter==stbl_f and marker!=None:
-            #markers[0].highlite_marker(img)
-            check=True
+    #img_roi = cv2.GaussianBlur(img_roi, (3, 3), 0)
+    img_roi = cv2.Canny(img_roi, 100, 255)
 
-            if not perspective_check(img, marker[:,0,:]):
-                check=False
-        else:
-            check=False
-            #cv2.rectangle(img, (x_a, y_a), (x_a + w_a, y_a + h_a), (0, 0, 255), 10)
-        if check:
-            cv2.rectangle(img, (x_a, y_a), (x_a + w_a, y_a + h_a), (0, 255, 0), 10)
-        return [img, counter, check]
-    else:
-        #img=cv2.bitwise_and(img, img, mask=masked)
-        #cv2.rectangle(img, (x_a, y_a), (x_a + w_a, y_a + h_a), (0, 255, 0), 10)
-        return img
+
+
+    M = np.ones((2, 2), np.uint8)
+    img_roi = cv2.dilate(img_roi, M, iterations=1)
+    #img_roi = cv2.erode(img_roi, M, iterations=1)
+    cv2.imshow('frame2', img_roi)
+    _, cnts, _ = cv2.findContours(img_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    counter = 0
+    for c in cnts:
+        x, y, w, h = cv2.boundingRect(c)
+        if (w * h) > (all_area * thresh):
+            c[:, 0, 0] = c[:, 0, 0] // new_x
+            c[:, 0, 1] = c[:, 0, 1] // new_x
+            if (x - 1) <= 0 or (y - 1) <= 0 or (x + w + 1) >= w_a or (y + h + 1) >= h_a:
+                cv2.drawContours(frame, [c], -1, (0, 0, 255), -1)
+
+            else:
+                cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
+                check = True
+                counter = counter + 1
+    if check:
+        cv2.rectangle(img, (x_a, y_a), (x_a + w_a, y_a + h_a), (0, 255, 0), 10)
+    return [frame, check]
 
 class CvCamera(Image):
     def __init__(self, **kwargs):
         super(CvCamera, self).__init__(**kwargs)
         self.base = sys.argv[0][:sys.argv[0].rfind('/')]
         self.home = os.path.expanduser("~")
-        self.camera = PiCamera()
-        self.camera.resolution=(1920,1080)
-        self.camera.framerate=32
-        self.camera.awb_mode='off'
-        self.camera.awb_gains=(1.7,1.4)
-        self.camera.exposure_mode='sports'
-        self.camera.shutter_speed=9000
-        self.camera.iso=200
-        self.rawCapture = np.empty((1088,1920, 3), dtype=np.uint8)
-        self.stable_check_f = 0
+
+        self.camera = PiCamera(resolution=(1920, 1080), framerate=32)
+        self.camera.iso = 200
+        time.sleep(5)
+        self.camera.shutter_speed = 3000
+        self.camera.exposure_mode = 'off'
+        self.camera.awb_mode = 'off'
+        self.camera.awb_gains = (1.7, 1.4)
+        self.camera.brightness = 47
+        self.rawCapture = np.empty((1088, 1920, 3), dtype=np.uint8)
+
         self.umbral=0.0011
         self.live=True
-        self.contours=[]
-        self.name_save=''
-        self.permission=False
+        self.alto=15
+        self.largo=20
+        self.buffer=5
+
     def set_live(self, on_live):
         self.live=on_live
-    def get_check(self):
-        return self.permission
-    def set_name_save(self, name_save):
-        self.name_save=name_save
+
     def set_umbral(self, valor):
         self.umbral=valor
+
     def get_live(self):
         return self.live
+
     def camera_play(self, dt):
         self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
-        buf=self.rawCapture[184:904,320:1600]
+        buf=self.rawCapture[:]
         if self.live:
-            #buf, self.stable_check_f, self.permission = live_feed_roi(buf, self.umbral, self.stable_check_f, live=self.live)
 
-            buf = cv2.cvtColor(buf, cv2.COLOR_BGR2RGBA)
-            buf = cv2.flip(buf, 0)
-            buf = buf.tostring()
-            image_texture = Texture.create(size=(1280,720), colorfmt='rgba')
-            image_texture.blit_buffer(buf, colorfmt='rgba', bufferfmt='ubyte')
-            self.texture = image_texture
-        #if self.live == False and self.permission:
-        if self.live == False:
-            #print('false', self.name_save) ##
-            buf = self.rawCapture[184:904, 320:1600]
+            self.check, coords = perspective_check(buf)
+
+            if self.check:
+                vpoints = virtual_area(self.largo, self.alto, coords)
+                for n in range(len(vpoints)):
+                    self.buff[n][0].append(vpoints[n][0])
+                    self.buff[n][1].append(vpoints[n][1])
+
+            if len(self.buff[0][0]) == self.buffer:
+                for n in range(len(self.buff)):
+                    self.buff[n][0] = int(round(sum(self.buff[n][0]) / self.buffer))
+                    self.buff[n][1] = int(round(sum(self.buff[n][1]) / self.buffer))
+
+                pts = np.array(self.buff, np.int32)
+                buf = four_point_transform(buf, pts)
+
+                if (self.largo / self.alto) != (buf.shape[1] / buf.shape[0]):
+                    if buf.shape[1] > buf.shape[0]:
+                        new_x = (self.largo * buf.shape[0]) / self.alto
+                        buf = cv2.resize(buf, None, None, fx=new_x / buf.shape[1], fy=1,
+                                               interpolation=cv2.INTER_AREA)
+                    else:
+                        new_y = (self.alto * buf.shape[1]) / self.largo
+                        buf = cv2.resize(buf, None, None, fx=1, fy=new_y / buf.shape[0],
+                                               interpolation=cv2.INTER_AREA)
+
+                buf, self.check = live_feed_roi(buf, self.umbral)
+
+
+                self.buff = [[[], []], [[], []], [[], []], [[], []]]
+
+                buf = cv2.cvtColor(buf, cv2.COLOR_BGR2RGBA)
+                image_texture = Texture.create(size=(buf.shape[1], buf.shape[0]), colorfmt='rgba')
+                buf = cv2.flip(buf, 0)
+                buf = buf.tostring()
+
+                image_texture.blit_buffer(buf, colorfmt='rgba', bufferfmt='ubyte')
+                self.texture = image_texture
+
+
+        if self.live == False and self.check:
+            buf = self.rawCapture[:]
             cv2.imwrite('/home/pi/temp.png', buf)
-
-
-
-            #buf = live_feed_roi(buf, self.umbral, self.stable_check_f, live=self.live)
-
-            #buf = cv2.cvtColor(buf, cv2.COLOR_BGR2RGBA)
-
-
-
-            #buf = cv2.flip(buf, 0)
-            #buf = buf.tostring()
-            #image_texture = Texture.create(size=(1280,720), colorfmt='rgba')
-            #image_texture.blit_buffer(buf, colorfmt='rgba', bufferfmt='ubyte')
-            #self.texture = image_texture
-
-
-
-            #self.texture.save(self.name_save+'.png')
-
-            #print(self.name_save+'.png') ##
-            time.sleep(0.5)
             self.live=True
         else:
             self.live=True
     def cam_init(self):
+        self.buff=[[[],[]],[[],[]],[[],[]],[[],[]]]
         self.update = Clock.schedule_interval(self.camera_play, 1 / 25)
 
     def cam_cancel(self):
         self.update.cancel()
-
-class Microwave(GridLayout):
-    def __init__(self, **kwargs):
-        super(Microwave, self).__init__(**kwargs)
-        self.cols=3
-        button_uva=Button(text='Uva')
-        button_uva.bind(on_press=self.set_analize)
-        self.add_widget(button_uva)
-#        button_racimo = Button(text='Racimo')
-#        button_racimo.bind(on_press=self.set_analize)
-#        self.add_widget(button_racimo)
-        button_naranja = Button(text='Naranja')
-        button_naranja.bind(on_press=self.set_analize)
-        self.add_widget(button_naranja)
-        button_manzana = Button(text='Manzana')
-        button_manzana.bind(on_press=self.set_analize)
-        self.add_widget(button_manzana)
-    def set_analize(self, instance):
-        config_set(1, instance.text)
-
-class Labeler(GridLayout):
-    def __init__(self, **kwargs):
-        super(Labeler, self).__init__(**kwargs)
-        base = sys.argv[0][:sys.argv[0].rfind('/')]
-        self.config=config_get()
-        self.profiles = options_load(base+'/lists_tsv')
-        self.rows=1
-        self.profiles=self.profiles[int(self.config[1])][int(self.config[2])]
-        #self.profiles = self.profiles[0][1]
-
-        self.index=[]
-        self.index_num=[]
-
-        self.current=['','']
-
-        self.buttons=[]
-
-        self.options_list=[]
-
-        counter=0
-        self.buttons_index=[]
-
-        for n in range(len(self.profiles)):
-            if n==0:
-                self.options_list.append([])
-                self.index.append('None')
-                self.index_num.append(n)
-                continue
-            if '(num)' in self.profiles[n][0]:
-                self.index_num.append(n)
-                self.options_list.append([])
-                self.index.append('None')
-                self.buttons.append(Label(text=self.profiles[n][0][:self.profiles[n][0].find('(num)')], id='label'+str(counter)))
-                self.buttons_index.append('label'+str(counter))
-                self.buttons.append(TextInput(multiline=False, text='0', input_filter='int', id='input'+str(counter)))
-                self.buttons_index.append('input' + str(counter))
-            else:
-                self.options_list.append(self.profiles[n])
-                for i in self.profiles[n]:
-                    self.index.append(i)
-                    self.index_num.append(n)
-                self.buttons.append(Button(text=self.profiles[n][0], id='button'+str(counter), on_press=self.set_current))
-                self.buttons_index.append('button' + str(counter))
-            counter=counter+1
-        for n in self.buttons:
-            self.add_widget(n)
-        #self.add_widget(Button(text='total', on_press=self.total_text))
-    def set_current(self, dt):
-        self.current[0] = dt.text
-        self.current[1] = dt.id
-    def list_display(self):
-        return self.options_list[self.index_num[self.index.index(self.current[0])]]
-    def total_text(self):
-        text=''
-        for n in self.buttons:
-            if 'label' in n.id:
-                text = text + n.text + '#'
-            else:
-                text=text+n.text+'_'
-        return text[:len(text)-1]
-
-    def obey(self, label):
-        temp=[]
-        label=label.split('_')
-        for n in label:
-            if '#' in n:
-                n=n.split('#')
-                temp.append(n[0])
-                temp.append(n[1])
-            else:
-                temp.append(n)
-        for n in range(len(self.buttons)):
-            self.buttons[n].text=temp[n]
-
-class Contour_fix(FloatLayout, Widget):
-    def __init__(self, img_dir, **kwargs):
-        self.img_dir=img_dir
-        super(Contour_fix, self).__init__(**kwargs)
-        self.Imagen = Image(source=self.img_dir + '.png', keep_ratio=True, allow_stretch=True)
-
-        self.Labeler = Labeler(pos_hint={'top': 0.95, 'center_x': 0.5}, size_hint=(1, 0.06))
-        for n in self.Labeler.buttons:
-            if 'button' in n.id:
-                n.on_release = self.scroll_labeler
-
-
-
-        #lut = np.zeros(max(self.temp.flatten())+1, np.uint8)
-        #lut[1:] = 255
-
-        self.add_widget(self.Imagen)
-        self.add_widget(self.Labeler)
-
-
-    def get_current(self):
-        return self.img_dir + '.png'
-
-    def delete_file(self):
-        os.remove(self.img_dir+'.png')
-        #os.remove(self.img_dir + '.fruit')
-
-
-    def scroll_labeler(self):
-        grid = GridLayout(cols=1, spacing=5, size_hint_y=None)
-        grid.bind(minimum_height=grid.setter('height'))
-        self.page_scroll = ScrollView(do_scroll_x=False, size_hint=(1, None), size=(Window.width, Window.height))
-        for n in self.Labeler.list_display():
-            btn = Button(text=n, size_hint_y=None, height=200)
-            btn.bind(on_press=self.flush_labeler)
-            grid.add_widget(btn)
-        self.page_scroll.add_widget(grid)
-        self.add_widget(self.page_scroll)
-
-    def flush_labeler(self, dt):
-        self.Labeler.buttons[self.Labeler.buttons_index.index(self.Labeler.current[1])].text=dt.text
-        self.clear_widgets([self.page_scroll])

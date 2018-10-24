@@ -1,5 +1,3 @@
-import os
-import sys
 from kivy.uix.screenmanager import Screen
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
@@ -8,26 +6,12 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
-from kivy.uix.filechooser import FileChooserListView
-#from tools import config_set, config_get, options_load
 
-from urllib import request
-import time
-from urllib import error as urlerror
 import os
+import time
+import sys
 import socket
 import threading
-
-#import threading
-#import time
-
-#def thread_test():
-#    while True:
-#        time.sleep(1)
-#        print('sigo aquí')
-
-class MyOpener(request.FancyURLopener):
-    version = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11'
 
 class wifi_client:
     def __init__(self, **kwargs):
