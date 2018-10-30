@@ -5,14 +5,14 @@ import cv2
 import math
 import sys
 import time
-from math import atan2, sin, cos, pi, sqrt
+from math import atan2, sin, cos, sqrt
 
 from kivy.uix.image import Image
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 
-from ar_markers import detect_markers
-from picamera import PiCamera
+from detect import detect_markers
+#from picamera import PiCamera
 
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
@@ -71,7 +71,7 @@ def line_newPoint(point, length,rad):
 def line_angle(line):
     return atan2(line[1][1] - line[0][1], line[1][0] - line[0][0])
 
-def perspective_check(img):
+def perspective_check(img, ret_contours=False):
     id_list=[]
     x_center = []
     y_center = []
@@ -92,9 +92,15 @@ def perspective_check(img):
                 del(markers[n])
                 counter+=1
         if len(id_list)!=3:
-            return [False, []]
+            if ret_contours:
+                return [False, [], []]
+            else:
+                return [False, []]
     else:
-        return [False, []]
+        if ret_contours:
+            return [False, [], []]
+        else:
+            return [False, []]
 
     x_center = int(round(sum(x_center) / len(x_center),0))
     y_center = int(round(sum(y_center) / len(y_center),0))
@@ -165,7 +171,10 @@ def perspective_check(img):
     tres['c'] = marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point], 0, :]
     tres['fuga'] = line_intersection([tres['a'], tres['c']],
                                     [uno['b'], marker.contours[{0: 2, 1: 3, 2: 0, 3: 1}[point_fuga], 0, :]])
-    return [True, [uno, tres]]
+    if ret_contours:
+        return [True, [uno, tres], [n.contours for n in markers]]
+    else:
+        return [True, [uno, tres]]
 
 def virtual_area(largo, alto, diccionario):
     """
@@ -202,7 +211,44 @@ def virtual_area(largo, alto, diccionario):
     final = line_intersection(final_one, final_two)
     return [tuple(diccionario[0]['a']), largo, final, alto]
 
-def live_feed_roi(img, thresh):
+def ray_castQuery(contours, points, res=(1920,1080)):
+    if type(contours)==list:
+        black=np.zeros(res[::-1], np.uint8)
+        cv2.polylines(black, contours, True, 255, thickness=1)
+    else:
+        black = contours.copy()
+    points=np.array(points)
+    #test_instructions=['np.count_nonzero(black[:n[1], n[0]])', 'np.count_nonzero(black[n[1], n[0]:])',
+    #                   'np.count_nonzero(black[n[1]+1:, n[0]])', 'np.count_nonzero(black[n[1], :n[0]])']
+    test_instructions = ['black[:n[1], n[0]]', 'black[n[1], n[0]:]', 'black[n[1]+1:, n[0]]', 'black[n[1], :n[0]]']
+    final=[]
+    for n in points:
+        counter=0
+        location=False
+        while counter<4:
+            test=eval(test_instructions[counter])
+            reject=False
+            prev=test[0]
+            for t in test[1:]:
+                if t==0:
+                    prev=0
+                    continue
+                if t == 255 == prev:
+                    reject=True
+                    break
+                else:
+                    prev=255
+            if reject:
+                counter+=1
+                continue
+            if np.count_nonzero(test)%2 != 0:
+                location=True
+                break
+            counter+=1
+        final.append(location)
+    return final
+
+def live_feed_roi(img, thresh, ignore=None):
     new_x = 640 / img.shape[1]
     frame = img.copy()
     img = cv2.resize(img, None, None, fx=new_x, fy=new_x,
@@ -213,14 +259,11 @@ def live_feed_roi(img, thresh):
     img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     check = False
 
-    #img_roi = cv2.GaussianBlur(img_roi, (3, 3), 0)
     img_roi = cv2.Canny(img_roi, 100, 255)
-
-
 
     M = np.ones((2, 2), np.uint8)
     img_roi = cv2.dilate(img_roi, M, iterations=1)
-    #img_roi = cv2.erode(img_roi, M, iterations=1)
+
     cv2.imshow('frame2', img_roi)
     _, cnts, _ = cv2.findContours(img_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -240,6 +283,16 @@ def live_feed_roi(img, thresh):
     if check:
         cv2.rectangle(img, (x_a, y_a), (x_a + w_a, y_a + h_a), (0, 255, 0), 10)
     return [frame, check]
+
+def proper_correction(img, square_coordinates):
+    square_coordinates=square_coordinates[np.lexsort((square_coordinates[:,0,1], square_coordinates[:,0,0]))]
+    hight=line_length([square_coordinates[0, 0, :], square_coordinates[1,0,:]])
+    width = line_length([square_coordinates[0, 0, :], square_coordinates[2, 0, :]])
+    if hight>width:
+        img=cv2.resize(img, None, None, fx=1, fy=width/hight, interpolation=cv2.INTER_LINEAR)
+    elif hight<width:
+        img = cv2.resize(img, None, None, fx=hight/width, fy=1, interpolation=cv2.INTER_LINEAR)
+    return img
 
 class CvCamera(Image):
     def __init__(self, **kwargs):
