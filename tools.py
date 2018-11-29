@@ -218,8 +218,6 @@ def ray_castQuery(contours, points, res=(1920,1080)):
     else:
         black = contours.copy()
     points=np.array(points)
-    #test_instructions=['np.count_nonzero(black[:n[1], n[0]])', 'np.count_nonzero(black[n[1], n[0]:])',
-    #                   'np.count_nonzero(black[n[1]+1:, n[0]])', 'np.count_nonzero(black[n[1], :n[0]])']
     test_instructions = ['black[:n[1], n[0]]', 'black[n[1], n[0]:]', 'black[n[1]+1:, n[0]]', 'black[n[1], :n[0]]']
     final=[]
     for n in points:
@@ -248,40 +246,137 @@ def ray_castQuery(contours, points, res=(1920,1080)):
         final.append(location)
     return final
 
-def live_feed_roi(img, thresh, ignore=None):
+
+def live_feed_roi2(img, thresh, ignore=None, area=None, fancy=False):
+    try:
+        area[0]
+        img = four_point_transform(img, area)
+    except:
+        pass
+    img=cv2.blur(img, (2,2))
     new_x = 640 / img.shape[1]
     frame = img.copy()
-    img = cv2.resize(img, None, None, fx=new_x, fy=new_x,
-                              interpolation=cv2.INTER_LINEAR)
-    all = np.array([[[0, 0]], [[0, img.shape[0]]], [[img.shape[1], img.shape[0]]], [[img.shape[1], 0]]])
+    img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
+    all = np.array([[[0, 0]], [[0, frame.shape[0]]], [[frame.shape[1], frame.shape[0]]], [[frame.shape[1], 0]]])
     x_a, y_a, w_a, h_a = cv2.boundingRect(all)
     all_area = w_a * h_a
+
+    #print(all_area)
+    #print(line_length([all[0,0,:], all[1,0,:]])*line_length([all[0,0,:], all[2,0,:]]))
+
     img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     check = False
-
-    img_roi = cv2.Canny(img_roi, 100, 255)
-
+    img_roi = cv2.Canny(img_roi, 10, 100)
     M = np.ones((2, 2), np.uint8)
     img_roi = cv2.dilate(img_roi, M, iterations=1)
-
-    cv2.imshow('frame2', img_roi)
     _, cnts, _ = cv2.findContours(img_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    counter = 0
+    if fancy:
+        if ignore!=None:
+            factor=cv2.minAreaRect(ignore[0])[1][0]
+            factor=3.6/factor
+            factor_area=cv2.minAreaRect(ignore[0])[1]
+            factor_area=12.96/(factor_area[0]*factor_area[1])
+        else:
+            factor=1
+        final=[]
 
+    for c in cnts:
+        c[:, 0, 0] = c[:, 0, 0] // new_x
+        c[:, 0, 1] = c[:, 0, 1] // new_x
+        x, y, w, h = cv2.boundingRect(c)
+
+        if all_area*0.1 > (w * h) > (all_area * thresh):
+            if x > 0 < y and (x+w) < (x_a+w_a) and (y+h) < (y_a + h_a):
+                if ignore != None:
+                    if not ray_castQuery(ignore, [(int(x + (w / 2)), int(y + (h / 2)))],
+                                         res=(frame.shape[:2][::-1]))[0]:
+                        if fancy:
+                            ellipse = cv2.fitEllipse(c)
+                            cv2.ellipse(frame, ellipse, (0, 255, 0), 2)
+
+                            cv2.line(frame, (int(ellipse[0][0]), int(ellipse[0][1])), line_newPoint(ellipse[0], ellipse[1][1]/2, (ellipse[2]+90)*(math.pi/180)), (255,0,0), 2)
+                            cv2.line(frame, (int(ellipse[0][0]), int(ellipse[0][1])),
+                                     line_newPoint(ellipse[0], ellipse[1][0] / 2, ellipse[2] * (math.pi / 180)),
+                                     (255, 0, 255), 2)
+
+                            #cv2.line(frame, ellipse[0], ellipse[1], (255, 0, 0), 5)
+                            #rect = cv2.minAreaRect(c)
+                            ##print(rect)
+                            #box = cv2.boxPoints(rect)
+                            #box = np.int0(box)
+                            #cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
+                            area_roi = np.zeros((h, w), np.uint8)
+                            cv2.ellipse(area_roi, ((int(w / 2), int(h / 2)), ellipse[1], ellipse[2]), 255, -1)
+
+                            final.append([round(ellipse[1][0]*factor, 2), round(ellipse[1][1]*factor, 2), round(np.count_nonzero(area_roi)*factor_area, 2)])
+
+
+                            text='w='+str(final[-1][0])+'; h='+str(final[-1][1])
+                            cv2.putText(frame, text, (int(ellipse[0][0]), int(ellipse[0][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1,
+                                        cv2.LINE_AA)
+
+
+                        else:
+                            cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
+                        check = True
+                        counter = counter + 1
+                else:
+                    cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
+                    check = True
+                    counter = counter + 1
+    if check:
+        pass
+        #cv2.polylines(frame, [area], True, (255, 255, 255), thickness=1)
+    # cv2.drawContours(frame, ignore, -1, 255, 3)
+    if fancy:
+        return [frame, check, final]
+    else:
+        return [frame, check]
+
+def live_feed_roi(img, thresh, ignore=None, area=None):
+    try:
+        area[0]
+        img = four_point_transform(img, area)
+    except:
+        pass
+    new_x = 640 / img.shape[1]
+    frame = img.copy()
+    img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
+    all = np.array([[[0, 0]], [[0, frame.shape[0]]], [[frame.shape[1], frame.shape[0]]], [[frame.shape[1], 0]]])
+    x_a, y_a, w_a, h_a = cv2.boundingRect(all)
+    all_area = w_a * h_a
+
+    #print(all_area)
+    #print(line_length([all[0,0,:], all[1,0,:]])*line_length([all[0,0,:], all[2,0,:]]))
+
+    img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    check = False
+    img_roi = cv2.Canny(img_roi, 10, 100)
+    M = np.ones((2, 2), np.uint8)
+    img_roi = cv2.dilate(img_roi, M, iterations=1)
+    _, cnts, _ = cv2.findContours(img_roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     counter = 0
     for c in cnts:
+        c[:, 0, 0] = c[:, 0, 0] // new_x
+        c[:, 0, 1] = c[:, 0, 1] // new_x
         x, y, w, h = cv2.boundingRect(c)
-        if (w * h) > (all_area * thresh):
-            c[:, 0, 0] = c[:, 0, 0] // new_x
-            c[:, 0, 1] = c[:, 0, 1] // new_x
-            if (x - 1) <= 0 or (y - 1) <= 0 or (x + w + 1) >= w_a or (y + h + 1) >= h_a:
-                cv2.drawContours(frame, [c], -1, (0, 0, 255), -1)
-
-            else:
-                cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
-                check = True
-                counter = counter + 1
+        if all_area > (w * h) > (all_area * thresh):
+            if x > 0 < y and (x+w) < (x_a+w_a) and (y+h) < (y_a + h_a):
+                if ignore != None:
+                    if not ray_castQuery(ignore, [(int(x + (w / 2)), int(y + (h / 2)))],
+                                         res=(frame.shape[:2][::-1]))[0]:
+                        cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
+                        check = True
+                        counter = counter + 1
+                else:
+                    cv2.drawContours(frame, [c], -1, (0, 255, 0), -1)
+                    check = True
+                    counter = counter + 1
     if check:
-        cv2.rectangle(img, (x_a, y_a), (x_a + w_a, y_a + h_a), (0, 255, 0), 10)
+        pass
+        #cv2.polylines(frame, [area], True, (255, 255, 255), thickness=1)
+    # cv2.drawContours(frame, ignore, -1, 255, 3)
     return [frame, check]
 
 def proper_correction(img, square_coordinates):
@@ -294,6 +389,16 @@ def proper_correction(img, square_coordinates):
         img = cv2.resize(img, None, None, fx=hight/width, fy=1, interpolation=cv2.INTER_LINEAR)
     return img
 
+def header_decoder(img):
+    #print(img[0,0,0])
+    if img[0,0,0]!=127:
+        return [None, None, None]
+    values=[]
+    values.append(img[0, 1, 0] * 0.00005)
+    values.append(img[0, 2, 0] * 0.375)
+    values.append(img[0, 3, 0] * 0.375)
+    return values
+
 class CvCamera(Image):
     def __init__(self, **kwargs):
         super(CvCamera, self).__init__(**kwargs)
@@ -301,13 +406,14 @@ class CvCamera(Image):
         self.home = os.path.expanduser("~")
 
         self.camera = PiCamera(resolution=(1920, 1080), framerate=32)
-        self.camera.iso = 200
-        time.sleep(5)
-        self.camera.shutter_speed = 3000
+        self.camera.iso = 100
+        time.sleep(2)
+        self.camera.shutter_speed = 4000
         self.camera.exposure_mode = 'off'
         self.camera.awb_mode = 'off'
-        self.camera.awb_gains = (1.7, 1.4)
-        self.camera.brightness = 47
+        #red/blue
+        self.camera.awb_gains = (1.65, 1.4)
+        self.camera.brightness = 38
         self.rawCapture = np.empty((1088, 1920, 3), dtype=np.uint8)
 
         self.umbral=0.0011
@@ -319,8 +425,23 @@ class CvCamera(Image):
     def set_live(self, on_live):
         self.live=on_live
 
+    def set_alto(self, valor):
+        self.buff = [[[], []], [[], []], [[], []], [[], []]]
+        self.alto=valor
+
+    def set_largo(self, valor):
+        self.buff = [[[], []], [[], []], [[], []], [[], []]]
+        self.largo=valor
+
     def set_umbral(self, valor):
         self.umbral=valor
+    def set_exposure(self, value_parse):
+        if value_parse=='black':
+            self.camera.shutter_speed=4000
+            self.camera.brightness = 40
+        elif value_parse=='white':
+            self.camera.shutter_speed = 8000
+            self.camera.brightness = 38
 
     def get_live(self):
         return self.live
@@ -340,26 +461,14 @@ class CvCamera(Image):
 
             if len(self.buff[0][0]) == self.buffer:
                 for n in range(len(self.buff)):
-                    self.buff[n][0] = int(round(sum(self.buff[n][0]) / self.buffer))
-                    self.buff[n][1] = int(round(sum(self.buff[n][1]) / self.buffer))
+                    self.four_points[n][0]=int(round(sum(self.buff[n][0]) / self.buffer))
+                    self.four_points[n][1]=int(round(sum(self.buff[n][1]) / self.buffer))
+                    del(self.buff[n][0][0])
+                    del(self.buff[n][1][0])
 
-                pts = np.array(self.buff, np.int32)
-                buf = four_point_transform(buf, pts)
+                pts = np.array(self.four_points, np.int32)
 
-                if (self.largo / self.alto) != (buf.shape[1] / buf.shape[0]):
-                    if buf.shape[1] > buf.shape[0]:
-                        new_x = (self.largo * buf.shape[0]) / self.alto
-                        buf = cv2.resize(buf, None, None, fx=new_x / buf.shape[1], fy=1,
-                                               interpolation=cv2.INTER_AREA)
-                    else:
-                        new_y = (self.alto * buf.shape[1]) / self.largo
-                        buf = cv2.resize(buf, None, None, fx=1, fy=new_y / buf.shape[0],
-                                               interpolation=cv2.INTER_AREA)
-
-                buf, self.check = live_feed_roi(buf, self.umbral)
-
-
-                self.buff = [[[], []], [[], []], [[], []], [[], []]]
+                buf, self.check = live_feed_roi(buf, self.umbral, area=pts)
 
                 buf = cv2.cvtColor(buf, cv2.COLOR_BGR2RGBA)
                 image_texture = Texture.create(size=(buf.shape[1], buf.shape[0]), colorfmt='rgba')
@@ -369,15 +478,22 @@ class CvCamera(Image):
                 image_texture.blit_buffer(buf, colorfmt='rgba', bufferfmt='ubyte')
                 self.texture = image_texture
 
-
         if self.live == False and self.check:
+            #self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
             buf = self.rawCapture[:]
-            cv2.imwrite('/home/pi/temp.png', buf)
+            data = np.zeros((1, 1920, 3), np.uint8)
+            data[0, 0, :] = 127
+            data[0, 1, :] = int(self.umbral/0.00005)
+            data[0, 2, :] = int(self.largo/0.375)
+            data[0, 3, :] = int(self.alto/0.375)
+            cv2.imwrite('/home/pi/temp.png', np.append(data,buf[:1081], axis=0))
             self.live=True
         else:
             self.live=True
+
     def cam_init(self):
         self.buff=[[[],[]],[[],[]],[[],[]],[[],[]]]
+        self.four_points=[[[],[]],[[],[]],[[],[]],[[],[]]]
         self.update = Clock.schedule_interval(self.camera_play, 1 / 25)
 
     def cam_cancel(self):

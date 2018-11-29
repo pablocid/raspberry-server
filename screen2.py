@@ -22,18 +22,39 @@ class Screen2(Screen):
         if '/root' in self.home:
             self.home=self.home.replace('/root', '/home/pi')
 
-        self.grid=GridLayout(cols=2, rows=1, pos_hint={'top':0.1, 'center_x':0.5}, size_hint=(0.6, 0.1))
+        self.grid=GridLayout(cols=3, rows=1, pos_hint={'top':0.1, 'center_x':0.5}, size_hint=(0.6, 0.1))
         self.grid.add_widget(Button(text='Back', on_press=self.change_back))
-        self.grid.add_widget(Button(text='Capture', on_release=self.cicle))
+        self.grid.add_widget(Button(text='white', on_press=self.set_background))
+        self.grid.add_widget(Button(text='black', on_press=self.set_background))
+        #self.grid.add_widget(Button(text='Capture', on_release=self.cicle))
         self.add_widget(self.grid)
         self.cameraman = CvCamera(pos_hint={'top': 1, 'center_x': 0.5}, allow_stretch=True, size_hint_y=0.9)
         self.add_widget(self.cameraman)
-        self.slide_thresh=Slider(size_hint_x=0.06, pos_hint={'center_x':0.9}, min=0, max=0.01, value=0.0011, orientation='vertical', step=0.0001, on_touch_move=self.set_thresh)
+        self.slide_thresh = Slider(size_hint_x=0.06, pos_hint={'center_x':0.9}, min=0, max=255, value=20,
+                                 orientation='vertical', step=1, on_touch_move=self.set_thresh)
+
+        self.slide_largo = Slider(size_hint_y=0.06, pos_hint={'center_x': 0.5, 'center_y': 0.1}, min=0, max=255, value=54,
+                                   orientation='horizontal', step=1, on_touch_move=self.set_largo)
+
+        self.slide_alto = Slider(size_hint_x=0.06, pos_hint={'center_x': 0.1}, min=0, max=255, value=40,
+                                  orientation='vertical', step=1, on_touch_move=self.set_alto)
+
         self.add_widget(self.slide_thresh)
+        self.add_widget(self.slide_largo)
+        self.add_widget(self.slide_alto)
         self.on_enter=self.in_screen
 
     def set_thresh(self, a, b):
-        self.cameraman.set_umbral(valor=self.slide_thresh.value)
+        self.cameraman.set_umbral(valor=self.slide_thresh.value*0.00005)
+
+    def set_largo(self, a, b):
+        self.cameraman.set_largo(valor=self.slide_largo.value*0.375)
+
+    def set_alto(self, a, b):
+        self.cameraman.set_alto(valor=self.slide_alto.value*0.375)
+
+    def set_background(self, dt):
+        self.cameraman.set_exposure(value_parse=dt.text)
 
     def in_screen(self):
 

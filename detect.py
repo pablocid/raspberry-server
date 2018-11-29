@@ -101,21 +101,30 @@ def detect_markers(img):
         persp_transf = cv2.getPerspectiveTransform(sorted_curve, canonical_marker_coords)
         warped_img = cv2.warpPerspective(gray, persp_transf, (warped_size, warped_size))
         
+        #cs, _ = cv2.findContours(cv2.Canny(warped_img, 100, 255), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+        #warped_draw=np.zeros(warped_img.shape, np.uint8)
+        #for c in cs:
+        #    if warped_img.shape[0]-1 in c[:,0,1] or warped_img.shape[1]-1 in c[:,0,0]:
+        #        continue
+        #    cv2.drawContours(warped_draw, [c], -1, 255, -1)
+        #cv2.drawContours(warped_draw, cs, -1, 255, -1)
+        
+
         # do i really need to convert twice?
         if len(warped_img.shape) > 2:
             warped_gray = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
         else:
             warped_gray = warped_img
-        
-        _, warped_bin = cv2.threshold(warped_gray, 130, 255, cv2.THRESH_BINARY)
-        
+        umbral=90
+        _, warped_bin = cv2.threshold(warped_gray, umbral, 255, cv2.THRESH_BINARY)
+        #cv2.imshow('watcher', warped_bin)
         marker = warped_bin.reshape(
             [MARKER_SIZE, warped_size // MARKER_SIZE, MARKER_SIZE, warped_size // MARKER_SIZE]
         )
         
         marker = marker.mean(axis=3).mean(axis=1)
-        marker[marker < 130] = 0
-        marker[marker >= 130] = 1
+        marker[marker < umbral] = 0
+        marker[marker >= umbral] = 1
         
         try:
             marker = validate_and_turn(marker)
