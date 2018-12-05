@@ -44,7 +44,10 @@ app.get('/tomafoto', function (req, res) {
 
 app.get('/frame', function (req, res) {
     var frame = exec('python3 node_helper.py -i capture');
-    console.log('frame OK', frame.toString());
+    console.log('frame string', frame.toString());
+    console.log('frame toJSON', frame.toJSON());
+    console.log('frame toLocaleString', frame.toLocaleString());
+
 
     
 

@@ -24,8 +24,8 @@ def main(argv):
     except:
         raise ConnectionError('time out')
     #time.sleep(0.5)
-    print(a)
-    #return a
+    #print(a)
+    return a
     sys.exit()
 
 if __name__ == "__main__":
