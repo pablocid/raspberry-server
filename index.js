@@ -44,7 +44,9 @@ app.get('/tomafoto', function (req, res) {
 
 app.get('/frame', function (req, res) {
     var frame = exec('python3 node_helper.py -i capture');
-    console.log('frame OK');
+    console.log('frame OK', frame.toString());
+
+    
 
     const reading = createReadStream("/home/pi/temp.png");
     console.log('streaming')
