@@ -61,10 +61,10 @@ def detect_markers(img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = img.copy()
 
-    new_x = 640 / img.shape[1]
+    #new_x = 640 / img.shape[1]
 
-    img = cv2.resize(img, None, None, fx=new_x, fy=new_x,
-                              interpolation=cv2.INTER_LINEAR)
+    #img = cv2.resize(img, None, None, fx=new_x, fy=new_x,
+    #                          interpolation=cv2.INTER_LINEAR)
 
     width, height = img.shape
     img = cv2.Canny(img, 100, 255)
@@ -92,8 +92,8 @@ def detect_markers(img):
         if not (len(approx_curve) == 4 and cv2.isContourConvex(approx_curve)):
             continue
         
-        approx_curve[:, 0, 0] = approx_curve[:, 0, 0] // new_x
-        approx_curve[:, 0, 1] = approx_curve[:, 0, 1] // new_x
+        #approx_curve[:, 0, 0] = approx_curve[:, 0, 0] // new_x
+        #approx_curve[:, 0, 1] = approx_curve[:, 0, 1] // new_x
         sorted_curve = array(
             cv2.convexHull(approx_curve, clockwise=False),
             dtype='float32'
@@ -115,9 +115,10 @@ def detect_markers(img):
             warped_gray = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
         else:
             warped_gray = warped_img
-        umbral=90
+        umbral=120
         _, warped_bin = cv2.threshold(warped_gray, umbral, 255, cv2.THRESH_BINARY)
         #cv2.imshow('watcher', warped_bin)
+        #cv2.waitKey(0)
         marker = warped_bin.reshape(
             [MARKER_SIZE, warped_size // MARKER_SIZE, MARKER_SIZE, warped_size // MARKER_SIZE]
         )
