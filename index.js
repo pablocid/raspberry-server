@@ -49,11 +49,11 @@ app.get('/tomafoto', function (req, res) {
 });
 
 const errorMessage = [
-    { message: 'no_square_background', code: 510},
-    { message: 'wrong_marker', code: 511},
-    { message: 'no_marker', code: 512},
-    { message: 'no_objects', code: 513},
-    { message: 'time_out', code: 514},
+    { message: 'no_square_background', code: 201},
+    { message: 'wrong_marker', code: 202},
+    { message: 'no_marker', code: 203},
+    { message: 'no_objects', code: 204},
+    { message: 'time_out', code: 205},
     { message: 'ok', code: 200},
 ];
 
@@ -61,20 +61,19 @@ app.get('/frame', function (req, res) {
     const imgFile = "/home/pi/temp.png";
     const frame = exec('python3 node_helper.py -i capture');
     const msg = frame.toString();
-    console.log('message ', msg);
+    // console.log('message ', msg);
 
-    res.header("mensaje-cam", msg);
+    // res.header("mensaje-cam", msg);
 
-    // for (let i = 0; i < errorMessage.length; i++) {
-    //     let item = errorMessage[i];
-    //     console.log(msg, item.message);
-    //     if(msg === item.message){
-    //         res.status(item.code);
-    //         res.header("mensaje-cam", "*");
-    //         console.log('Match');
-    //         break;
-    //     }
-    // }
+    for (let i = 0; i < errorMessage.length; i++) {
+        let item = errorMessage[i];
+        console.log(msg, item.message);
+        if(msg === item.message){
+            res.status(item.code);
+            res.header("mensaje-cam", item.message);
+            break;
+        }
+    }
     
     
 
