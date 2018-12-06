@@ -42,26 +42,41 @@ app.get('/tomafoto', function (req, res) {
 
 });
 
+const errorMessage = [
+    { message: 'no_square_background', code: 510},
+    { message: 'wrong_marker', code: 511},
+    { message: 'no_marker', code: 512},
+    { message: 'no_objects', code: 513},
+    { message: 'time_out', code: 514},
+    { message: 'ok', code: 200},
+];
+
 app.get('/frame', function (req, res) {
     const imgFile = "/home/pi/temp.png";
     const frame = exec('python3 node_helper.py -i capture');
-    console.log('frame string', frame.toString());
-    console.log('frame toJSON', frame.toJSON());
-    console.log('frame toLocaleString', frame.toLocaleString());
-
-
+    const msg = frame.toString();
+    
+    for (let i = 0; i < errorMessage.length; i++) {
+        const item = errorMessage[i];
+        if(msg === item.message){
+            res.status(item.code);
+            console.log(item.message,item.code);
+            break;
+        }
+    }
+    
     
 
     const reading = createReadStream(imgFile);
     console.log('streaming')
     reading.pipe(res);
-    reading.on('end', () => {
-        console.log('transferencia terminada');
-        unlink(imgFile,function(err){
-            if(err) return console.log(err);
-            console.log('file deleted successfully');
-       });  
-    });
+    // reading.on('end', () => {
+    //     console.log('transferencia terminada');
+    //     unlink(imgFile,function(err){
+    //         if(err) return console.log(err);
+    //         console.log('file deleted successfully');
+    //    });  
+    // });
 });
 
 app.listen(3000, () => console.log('Gator app listening on port 3000!'));
