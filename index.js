@@ -4,6 +4,12 @@ var exec = require('child_process').execSync;
 var spawn = require('child_process').spawn;
 const { readFile, createReadStream, unlink } = require('fs');
 
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
 app.get('/', (req, res) => {
     res.send('An alligator approaches!');
 });
