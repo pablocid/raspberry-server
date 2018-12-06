@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 var exec = require('child_process').execSync;
 var spawn = require('child_process').spawn;
-const { readFile, createReadStream } = require('fs');
+const { readFile, createReadStream, unlink } = require('fs');
 
 app.get('/', (req, res) => {
     res.send('An alligator approaches!');
@@ -43,7 +43,8 @@ app.get('/tomafoto', function (req, res) {
 });
 
 app.get('/frame', function (req, res) {
-    var frame = exec('python3 node_helper.py -i capture');
+    const imgFile = "/home/pi/temp.png";
+    const frame = exec('python3 node_helper.py -i capture');
     console.log('frame string', frame.toString());
     console.log('frame toJSON', frame.toJSON());
     console.log('frame toLocaleString', frame.toLocaleString());
@@ -51,9 +52,16 @@ app.get('/frame', function (req, res) {
 
     
 
-    const reading = createReadStream("/home/pi/temp.png");
+    const reading = createReadStream(imgFile);
     console.log('streaming')
     reading.pipe(res);
+    reading.on('end', () => {
+        console.log('transferencia terminada');
+        unlink(imgFile,function(err){
+            if(err) return console.log(err);
+            console.log('file deleted successfully');
+       });  
+    });
 });
 
 app.listen(3000, () => console.log('Gator app listening on port 3000!'));
