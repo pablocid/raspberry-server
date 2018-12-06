@@ -22,11 +22,11 @@ def main(argv):
         s.send(inputfile.encode('utf-8'))
         a=s.recv(1024).decode('utf-8')
     except:
-        print('time_out')
+        print('time_out', end='')
         sys.exit()
         return
     #time.sleep(0.5)
-    print(a)
+    print(a, end='')
     #return a
     sys.exit()
 
