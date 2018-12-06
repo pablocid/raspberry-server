@@ -55,6 +55,7 @@ app.get('/frame', function (req, res) {
     const imgFile = "/home/pi/temp.png";
     const frame = exec('python3 node_helper.py -i capture');
     const msg = frame.toString();
+    console.log('message ', msg);
     
     for (let i = 0; i < errorMessage.length; i++) {
         const item = errorMessage[i];
