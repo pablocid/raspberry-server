@@ -60,7 +60,7 @@ app.get('/frame', function (req, res) {
     for (let i = 0; i < errorMessage.length; i++) {
         let item = errorMessage[i];
         console.log(msg, item.message);
-        if(msg === item.message){
+        if(msg == item.message){
             res.status(item.code);
             console.log(item.message,item.code);
             break;
