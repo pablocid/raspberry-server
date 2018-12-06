@@ -22,7 +22,9 @@ def main(argv):
         s.send(inputfile.encode('utf-8'))
         a=s.recv(1024).decode('utf-8')
     except:
-        raise ConnectionError('time out')
+        print('time_out')
+        sys.exit()
+        return
     #time.sleep(0.5)
     print(a)
     #return a
