@@ -55,12 +55,14 @@ app.get('/frame', function (req, res) {
     const imgFile = "/home/pi/temp.png";
     const frame = exec('python3 node_helper.py -i capture');
     const msg = frame.toString();
+    console.log('message ', msg);
 
     for (let i = 0; i < errorMessage.length; i++) {
         let item = errorMessage[i];
+        console.log(msg, item.message);
         if(msg === item.message){
             res.status(item.code);
-            console.log(item.message,item.code);
+            console.log('Match');
             break;
         }
     }
