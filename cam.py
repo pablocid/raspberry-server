@@ -79,7 +79,7 @@ def img_check(img):
     major_area=temp
 
     temp=four_point_transform(frame, cv2.approxPolyDP(cnts[major_area], 0.04*cv2.arcLength(cnts[major_area],True),True)[:,0,:])
-    temp = detect_markers(temp[int(temp.shape[0]*0.88):, int(temp.shape[1]*0.88):])
+    temp = detect_markers(temp[int(temp.shape[0]*0.85):, int(temp.shape[1]*0.85):])
 
     try:
         if temp[0].id != 3116:
