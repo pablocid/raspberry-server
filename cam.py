@@ -150,8 +150,8 @@ class Cameraman():
         self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
         buf = self.rawCapture[:]
         check, msg=img_check(buf)
-        if check:
-            cv2.imwrite('/home/pi/temp.png', buf)
+        #if check:
+        cv2.imwrite('/home/pi/temp.png', buf)
         self.busy=False
         return msg
     def photo_precheck(self, np_image):
