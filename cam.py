@@ -147,7 +147,7 @@ class Cameraman():
         self.busy = False
 
     def capture_full(self):
-        self.camera.capture(self.rawCapture, format="bgr", use_video_port=False)
+        self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
         buf = self.rawCapture[:]
         check, msg=img_check(buf)
         #if check:
