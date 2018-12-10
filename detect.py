@@ -1,15 +1,11 @@
-from __future__ import print_function
-from __future__ import division
-
 try:
     import cv2
 except ImportError:
     raise Exception('Error: OpenCv is not installed')
 
-from numpy import array, rot90
 import numpy as np
 from ar_markers.coding import decode, extract_hamming_code
-from ar_markers.marker import MARKER_SIZE, HammingMarker
+from ar_markers.marker import HammingMarker
 
 BORDER_COORDINATES = [
     [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [1, 0], [1, 6], [2, 0], [2, 6], [3, 0],
@@ -18,6 +14,33 @@ BORDER_COORDINATES = [
 
 ORIENTATION_MARKER_COORDINATES = [[1, 1], [1, 5], [5, 1], [5, 5]]
 
+def order_points(pts):
+    rect = np.zeros((4, 2), dtype="float32")
+    s = pts.sum(axis=1)
+    rect[0] = pts[np.argmin(s)]
+    rect[2] = pts[np.argmax(s)]
+    diff = np.diff(pts, axis=1)
+    rect[1] = pts[np.argmin(diff)]
+    rect[3] = pts[np.argmax(diff)]
+    return rect
+
+def four_point_transform(image, pts):
+    rect = order_points(pts)
+    (tl, tr, br, bl) = rect
+    widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
+    widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
+    maxWidth = max(int(widthA), int(widthB))
+    heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
+    heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
+    maxHeight = max(int(heightA), int(heightB))
+    dst = np.array([
+        [0, 0],
+        [maxWidth - 1, 0],
+        [maxWidth - 1, maxHeight - 1],
+        [0, maxHeight - 1]], dtype="float32")
+    M = cv2.getPerspectiveTransform(rect, dst)
+    warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+    return warped
 
 def validate_and_turn(marker):
     # first, lets make sure that the border contains only zeros
@@ -43,7 +66,7 @@ def validate_and_turn(marker):
         rotation = 2
     elif orientation_marker == [5, 1]:
         rotation = 3
-    marker = rot90(marker, k=rotation)
+    marker = np.rot90(marker, k=rotation)
     return marker
 
 
@@ -57,82 +80,47 @@ def detect_markers(img):
     Output:
       a list of found markers. If no markers are found, then it is an empty list.
     """
+    #cv2.namedWindow('watcher', cv2.WINDOW_NORMAL)
     if len(img.shape) > 2:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = img.copy()
 
-    #new_x = 640 / img.shape[1]
-
-    #img = cv2.resize(img, None, None, fx=new_x, fy=new_x,
-    #                          interpolation=cv2.INTER_LINEAR)
-
     width, height = img.shape
     img = cv2.Canny(img, 100, 255)
-    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+    #M = np.ones((2, 2), np.uint8)
+    #img = cv2.dilate(img, M, iterations=1)
+
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
 
     # We only keep the long enough contours
-    min_contour_length = min(width, height) / 10
-    # contours = [contour for contour in contours if cv2.arcLength(contour, True) > min_contour_length]
-    warped_size = 49
-    canonical_marker_coords = array(
-        (
-            (0, 0),
-            (warped_size - 1, 0),
-            (warped_size - 1, warped_size - 1),
-            (0, warped_size - 1)
-        ),
-        dtype='float32')
+    min_contour_length = width*height / 10
 
     markers_list = []
-    
     for contour in contours:
-        if cv2.arcLength(contour, True) <= min_contour_length:
-            continue
-        approx_curve = cv2.approxPolyDP(contour, cv2.arcLength(contour, True) * 0.01, True)
-        if not (len(approx_curve) == 4 and cv2.isContourConvex(approx_curve)):
-            continue
-        
-        #approx_curve[:, 0, 0] = approx_curve[:, 0, 0] // new_x
-        #approx_curve[:, 0, 1] = approx_curve[:, 0, 1] // new_x
-        sorted_curve = array(
-            cv2.convexHull(approx_curve, clockwise=False),
-            dtype='float32'
-        )
-        persp_transf = cv2.getPerspectiveTransform(sorted_curve, canonical_marker_coords)
-        warped_img = cv2.warpPerspective(gray, persp_transf, (warped_size, warped_size))
-        
-        #cs, _ = cv2.findContours(cv2.Canny(warped_img, 100, 255), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
-        #warped_draw=np.zeros(warped_img.shape, np.uint8)
-        #for c in cs:
-        #    if warped_img.shape[0]-1 in c[:,0,1] or warped_img.shape[1]-1 in c[:,0,0]:
-        #        continue
-        #    cv2.drawContours(warped_draw, [c], -1, 255, -1)
-        #cv2.drawContours(warped_draw, cs, -1, 255, -1)
-        
+        rect = cv2.minAreaRect(contour)
 
-        # do i really need to convert twice?
-        if len(warped_img.shape) > 2:
-            warped_gray = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
-        else:
-            warped_gray = warped_img
-        umbral=120
+        if rect[1][0]*rect[1][1] <= min_contour_length:
+            continue
+
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+
+        warped_gray = four_point_transform(gray, box)
+        umbral = 120
         _, warped_bin = cv2.threshold(warped_gray, umbral, 255, cv2.THRESH_BINARY)
-        #cv2.imshow('watcher', warped_bin)
+
+        marker = cv2.resize(warped_bin, (7,7), interpolation=cv2.INTER_LINEAR)
+
+        #cv2.imshow('watcher', marker)
         #cv2.waitKey(0)
-        marker = warped_bin.reshape(
-            [MARKER_SIZE, warped_size // MARKER_SIZE, MARKER_SIZE, warped_size // MARKER_SIZE]
-        )
-        
-        marker = marker.mean(axis=3).mean(axis=1)
-        marker[marker < umbral] = 0
-        marker[marker >= umbral] = 1
-        
+
+        marker[marker < 255] = 0
+        marker[marker == 255] = 1
         try:
             marker = validate_and_turn(marker)
             hamming_code = extract_hamming_code(marker)
             marker_id = int(decode(hamming_code), 2)
-            markers_list.append(HammingMarker(id=marker_id, contours=approx_curve))
+            markers_list.append(HammingMarker(id=marker_id, contours=box))
         except ValueError:
             continue
-    
     return markers_list
