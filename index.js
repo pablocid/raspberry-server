@@ -57,9 +57,9 @@ const errorMessage = [
     { message: 'ok', code: 200},
 ];
 
-app.get('/frame', function (req, res) {
+app.get('/preview', function (req, res) {
     const imgFile = "/home/pi/temp.png";
-    const frame = exec('python3 node_helper.py -i capture');
+    const frame = exec('python3 node_helper.py -i preview');
     const msg = frame.toString();
     // console.log('message ', msg);
 
@@ -87,6 +87,15 @@ app.get('/frame', function (req, res) {
     //         console.log('file deleted successfully');
     //    });  
     // });
+});
+
+app.get('/capture', function (req, res) {
+    const imgFile = "/home/pi/temp.png";
+    exec('python3 node_helper.py -i capture');
+
+    const reading = createReadStream(imgFile);
+    reading.pipe(res);
+
 });
 
 app.listen(3000, () => console.log('Gator app listening on port 3000!'));
