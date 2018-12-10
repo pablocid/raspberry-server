@@ -104,7 +104,7 @@ def img_check(img):
 
 class Cameraman():
     def __init__(self):
-        self.camera = PiCamera(resolution=(1440, 1080), framerate=25)
+        self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
         self.camera.iso = 200
         time.sleep(2)
         self.camera.shutter_speed = 9000
@@ -112,7 +112,7 @@ class Cameraman():
         self.camera.awb_mode = 'off'
         self.camera.awb_gains = (1.65, 1.4) # red/blue
         self.camera.brightness = 42
-        self.rawCapture = np.empty((1088, 1440, 3), dtype=np.uint8)
+        self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
         self.breaker=False
@@ -154,8 +154,8 @@ class Cameraman():
         self.busy = False
         print('Camera ready')
     def capture_preview(self):
-        self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
-        buf = self.rawCapture[:]
+        self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
+        buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
         check, msg=img_check(buf)
         new_x = 640 / buf.shape[1]
         buf = cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
@@ -163,8 +163,8 @@ class Cameraman():
         self.busy=False
         return msg
     def capture_full(self):
-        self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
-        buf = self.rawCapture[:]
+        self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
+        buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
         #check, msg=img_check(buf)
         cv2.imwrite('/home/pi/temp.png', buf)
         self.busy=False
