@@ -138,6 +138,13 @@ class Cameraman():
                     c.send(msg.encode('utf-8'))
                 else:
                     c.send('busy'.encode('utf-8'))
+            if a == 'preview':
+                if not self.busy:
+                    self.busy=True
+                    msg=self.capture_preview()
+                    c.send(msg.encode('utf-8'))
+                else:
+                    c.send('busy'.encode('utf-8'))
             else:
                 c.send('duno bro'.encode('utf-8'))
 
@@ -145,15 +152,23 @@ class Cameraman():
         t1 = threading.Thread(target=self.server_call, )
         t1.start()
         self.busy = False
-
-    def capture_full(self):
+        print('Camera ready')
+    def capture_preview(self):
         self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
         buf = self.rawCapture[:]
         check, msg=img_check(buf)
-        #if check:
+        new_x = 640 / buf.shape[1]
+        buf = cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
         cv2.imwrite('/home/pi/temp.png', buf)
         self.busy=False
         return msg
+    def capture_full(self):
+        self.camera.capture(self.rawCapture, format="bgr", use_video_port=True)
+        buf = self.rawCapture[:]
+        #check, msg=img_check(buf)
+        cv2.imwrite('/home/pi/temp.png', buf)
+        self.busy=False
+        return 'done'
     def photo_precheck(self, np_image):
         pass
 
