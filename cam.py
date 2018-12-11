@@ -112,6 +112,7 @@ class Cameraman():
         self.camera.awb_mode = 'off'
         self.camera.awb_gains = (1.65, 1.4) # red/blue
         self.camera.brightness = 42
+        self.camera.contrast = 0
         self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
