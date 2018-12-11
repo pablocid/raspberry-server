@@ -15,19 +15,18 @@ SHUTTER=0
 AWB_GAINS=0
 CONTRAST=0
 
-def raspi_detect():
-    ips = check_output('ifconfig')
-    if '192.168.50.4' in ips.decode("UTF-8"):
-        BRIGHT = 42
-        ISO = 200
-        SHUTTER = 10000
-        AWB_GAINS = (1.65, 1.4)
-    else:
-        BRIGHT=35
-        ISO = 100
-        SHUTTER = 12000
-        AWB_GAINS = (1.58, 1.4)
-        CONTRAST=60
+ips = check_output('ifconfig')
+if '192.168.50.4' in ips.decode("UTF-8"):
+    BRIGHT = 42
+    ISO = 200
+    SHUTTER = 10000
+    AWB_GAINS = (1.65, 1.4)
+else:
+    BRIGHT=35
+    ISO = 100
+    SHUTTER = 12000
+    AWB_GAINS = (1.58, 1.4)
+    CONTRAST=60
     
 
 def order_points(pts):
@@ -126,7 +125,6 @@ def img_check(img):
 
 class Cameraman():
     def __init__(self):
-        raspi_detect()
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
         self.camera.iso = ISO
         time.sleep(2)
