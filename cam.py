@@ -7,6 +7,28 @@ import numpy as np
 import cv2
 from detect import detect_markers
 from picamera import PiCamera
+from subprocess import check_output
+
+BRIGHT=0
+ISO=0
+SHUTTER=0
+AWB_GAINS=0
+CONTRAST=0
+
+def raspi_detect():
+    ips = check_output('ifconfig')
+    if '192.168.50.4' in ips.decode("UTF-8"):
+        BRIGHT = 42
+        ISO = 200
+        SHUTTER = 10000
+        AWB_GAINS = (1.65, 1.4)
+    else:
+        BRIGHT=35
+        ISO = 100
+        SHUTTER = 12000
+        AWB_GAINS = (1.58, 1.4)
+        CONTRAST=60
+    
 
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
@@ -104,15 +126,16 @@ def img_check(img):
 
 class Cameraman():
     def __init__(self):
+        raspi_detect()
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
-        self.camera.iso = 200
+        self.camera.iso = ISO
         time.sleep(2)
-        self.camera.shutter_speed = 9000
+        self.camera.shutter_speed = SHUTTER
         self.camera.exposure_mode = 'off'
         self.camera.awb_mode = 'off'
-        self.camera.awb_gains = (1.65, 1.4) # red/blue
-        self.camera.brightness = 42
-        self.camera.contrast = 0
+        self.camera.awb_gains = AWB_GAINS # red/blue
+        self.camera.brightness = BRIGHT
+        self.camera.contrast = CONTRAST
         self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
