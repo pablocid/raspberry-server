@@ -27,7 +27,7 @@ else:
     ISO = 200
     SHUTTER = 10000
     AWB_GAINS = (Fraction(55, 32), Fraction(193, 128))
-    CONTRAST=60
+    CONTRAST=50
     
 
 def order_points(pts):
