@@ -185,6 +185,10 @@ class Cameraman():
         self.busy=False
         return msg
     def capture_full(self):
+        print(self.camera.shutter_speed)
+        print(self.camera.awb_gains)
+        print(self.camera.brightness)
+        print(self.camera.contrast)
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
         buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
         #check, msg=img_check(buf)
