@@ -8,7 +8,7 @@ import cv2
 from detect import detect_markers
 from picamera import PiCamera
 from subprocess import check_output
-
+from fractions import Fraction
 BRIGHT=0
 ISO=0
 SHUTTER=0
@@ -17,10 +17,11 @@ CONTRAST=0
 
 ips = check_output('ifconfig')
 if '192.168.50.4' in ips.decode("UTF-8"):
-    BRIGHT = 25
+    BRIGHT = 50
     ISO = 100
-    SHUTTER = 25000
-    AWB_GAINS = (1.55, 1.5)
+    SHUTTER = 18346
+    AWB_GAINS = (Fraction(57, 32), Fraction(193, 128))
+
 else:
     BRIGHT=38
     ISO = 200
@@ -126,14 +127,14 @@ def img_check(img):
 class Cameraman():
     def __init__(self):
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
-        #self.camera.iso = ISO
+        self.camera.iso = ISO
         time.sleep(2)
-        #self.camera.shutter_speed = SHUTTER
-        #self.camera.exposure_mode = 'off'
-        #self.camera.awb_mode = 'off'
-        #self.camera.awb_gains = AWB_GAINS # red/blue
-        #self.camera.brightness = BRIGHT
-        #self.camera.contrast = CONTRAST
+        self.camera.shutter_speed = SHUTTER
+        self.camera.exposure_mode = 'off'
+        self.camera.awb_mode = 'off'
+        self.camera.awb_gains = AWB_GAINS # red/blue
+        self.camera.brightness = BRIGHT
+        self.camera.contrast = CONTRAST
         self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
@@ -185,14 +186,14 @@ class Cameraman():
         self.busy=False
         return msg
     def capture_full(self):
-        print(self.camera.shutter_speed)
-        print(self.camera.awb_gains)
-        print(self.camera.brightness)
-        print(self.camera.contrast)
-        print(self.camera.exposure_speed)
-        print(self.camera.iso)
-        print(self.camera.analog_gain)
-        print(self.camera.digital_gain)
+        #print(self.camera.shutter_speed)
+        #print(self.camera.awb_gains)
+        #print(self.camera.brightness)
+        #print(self.camera.contrast)
+        #print(self.camera.exposure_speed)
+        #print(self.camera.iso)
+        #print(self.camera.analog_gain)
+        #print(self.camera.digital_gain)
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
         buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
         #check, msg=img_check(buf)
