@@ -131,10 +131,10 @@ class Cameraman():
         time.sleep(2)
         #self.camera.shutter_speed = SHUTTER
         #self.camera.exposure_mode = 'off'
-        #self.camera.awb_mode = 'off'
-        #self.camera.awb_gains = AWB_GAINS # red/blue
+        self.camera.awb_mode = 'off'
+        self.camera.awb_gains = AWB_GAINS # red/blue
         #self.camera.brightness = BRIGHT
-        #self.camera.contrast = CONTRAST
+        self.camera.contrast = CONTRAST
         self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
