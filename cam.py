@@ -22,10 +22,10 @@ if '192.168.50.4' in ips.decode("UTF-8"):
     SHUTTER = 10000
     AWB_GAINS = (1.65, 1.4)
 else:
-    BRIGHT=35
-    ISO = 100
-    SHUTTER = 12000
-    AWB_GAINS = (1.58, 1.4)
+    BRIGHT=38
+    ISO = 200
+    SHUTTER = 10000
+    AWB_GAINS = (1.55, 1.4)
     CONTRAST=60
     
 
@@ -181,7 +181,7 @@ class Cameraman():
         check, msg=img_check(buf)
         new_x = 640 / buf.shape[1]
         buf = cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
-        cv2.imwrite('/home/pi/temp.png', buf)
+        cv2.imwrite('/home/pi/temp.jpg', buf)
         self.busy=False
         return msg
     def capture_full(self):
