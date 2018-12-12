@@ -17,7 +17,7 @@ CONTRAST=0
 
 ips = check_output('ifconfig')
 if '192.168.50.4' in ips.decode("UTF-8"):
-    BRIGHT = 50
+    BRIGHT = 30
     ISO = 100
     SHUTTER = 18346
     AWB_GAINS = (Fraction(57, 32), Fraction(193, 128))
