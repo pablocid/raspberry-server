@@ -20,7 +20,7 @@ if '192.168.50.4' in ips.decode("UTF-8"):
     BRIGHT = 42
     ISO = 100
     SHUTTER = 21000
-    AWB_GAINS = (1.50, 1.4)
+    AWB_GAINS = (1.55, 1.5)
 else:
     BRIGHT=38
     ISO = 200
