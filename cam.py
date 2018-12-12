@@ -190,6 +190,7 @@ class Cameraman():
         print(self.camera.brightness)
         print(self.camera.contrast)
         print(self.camera.exposure_speed)
+        print(self.camera.iso)
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
         buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
         #check, msg=img_check(buf)
