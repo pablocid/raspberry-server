@@ -126,14 +126,14 @@ def img_check(img):
 class Cameraman():
     def __init__(self):
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
-        self.camera.iso = ISO
+        #self.camera.iso = ISO
         time.sleep(2)
-        self.camera.shutter_speed = SHUTTER
-        self.camera.exposure_mode = 'off'
-        self.camera.awb_mode = 'off'
-        self.camera.awb_gains = AWB_GAINS # red/blue
-        self.camera.brightness = BRIGHT
-        self.camera.contrast = CONTRAST
+        #self.camera.shutter_speed = SHUTTER
+        #self.camera.exposure_mode = 'off'
+        #self.camera.awb_mode = 'off'
+        #self.camera.awb_gains = AWB_GAINS # red/blue
+        #self.camera.brightness = BRIGHT
+        #self.camera.contrast = CONTRAST
         self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
