@@ -184,7 +184,7 @@ class Cameraman():
         check, msg=img_check(buf)
         new_x = 640 / buf.shape[1]
         buf = cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
-        cv2.imwrite('/home/pi/temp.jpg', buf)
+        cv2.imwrite('/home/pi/temp.png', buf)
         self.busy=False
         return msg
     def capture_full(self):
