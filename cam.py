@@ -21,7 +21,7 @@ try:
         BRIGHT = 40
         ISO = 100
         SHUTTER = 18346
-        AWB_GAINS = (Fraction(57, 32), Fraction(193, 128))
+        AWB_GAINS = (Fraction(59, 32), Fraction(193, 128))
 
     else:
         BRIGHT=38
