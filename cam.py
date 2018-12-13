@@ -27,7 +27,7 @@ try:
         BRIGHT=38
         ISO = 200
         SHUTTER = 10000
-        AWB_GAINS = (Fraction(53, 32), Fraction(193, 128))
+        AWB_GAINS = (Fraction(52, 32), Fraction(193, 128))
         CONTRAST=50
 except:
     pass
