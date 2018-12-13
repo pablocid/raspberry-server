@@ -183,7 +183,7 @@ class Cameraman():
         print('Camera ready')
     def capture_preview(self):
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
-        buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
+        buf = cv2.cvtColor(self.rawCapture[:, :1640], cv2.COLOR_RGB2BGR)
         check, msg=img_check(buf)
         new_x = 640 / buf.shape[1]
         buf = cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
@@ -201,7 +201,7 @@ class Cameraman():
         #print(self.camera.digital_gain)
         #print(self.camera.contrast)
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
-        buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
+        buf = cv2.cvtColor(self.rawCapture[:, :1640], cv2.COLOR_RGB2BGR)
         #check, msg=img_check(buf)
         cv2.imwrite('/home/pi/temp.png', buf)
         self.busy=False
