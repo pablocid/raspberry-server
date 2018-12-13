@@ -26,7 +26,7 @@ else:
     BRIGHT=38
     ISO = 200
     SHUTTER = 10000
-    AWB_GAINS = (Fraction(55, 32), Fraction(193, 128))
+    AWB_GAINS = (Fraction(53, 32), Fraction(193, 128))
     CONTRAST=50
     
 
