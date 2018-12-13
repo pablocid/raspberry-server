@@ -6,7 +6,6 @@ import socket
 import numpy as np
 import cv2
 from detect import detect_markers
-from picamera import PiCamera
 from subprocess import check_output
 from fractions import Fraction
 BRIGHT=0
@@ -15,19 +14,23 @@ SHUTTER=0
 AWB_GAINS=0
 CONTRAST=0
 
-ips = check_output('ifconfig')
-if '192.168.50.4' in ips.decode("UTF-8"):
-    BRIGHT = 40
-    ISO = 100
-    SHUTTER = 18346
-    AWB_GAINS = (Fraction(57, 32), Fraction(193, 128))
+try:
+    from picamera import PiCamera
+    ips = check_output('ifconfig')
+    if '192.168.50.4' in ips.decode("UTF-8"):
+        BRIGHT = 40
+        ISO = 100
+        SHUTTER = 18346
+        AWB_GAINS = (Fraction(57, 32), Fraction(193, 128))
 
-else:
-    BRIGHT=38
-    ISO = 200
-    SHUTTER = 10000
-    AWB_GAINS = (Fraction(53, 32), Fraction(193, 128))
-    CONTRAST=50
+    else:
+        BRIGHT=38
+        ISO = 200
+        SHUTTER = 10000
+        AWB_GAINS = (Fraction(53, 32), Fraction(193, 128))
+        CONTRAST=50
+except:
+    pass
     
 
 def order_points(pts):
