@@ -65,14 +65,16 @@ def img_check(img):
 
     new_x = 640 / img.shape[1]
     img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
-    img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1]
+    #img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1]
+
     check = False
-    img_roi = cv2.Canny(img_roi, 40, 100)
+    img_roi = cv2.bitwise_or(cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1], 50, 100), cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 100, 100))
     #M = np.ones((2, 2), np.uint8)
     #img_roi = cv2.dilate(img_roi, M, iterations=1)
+    #cv2.bitwise_or(cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1], 50, 100), cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 50, 100))
 
-    cv2.imshow('frame', img_roi)
-    cv2.waitKey(0)
+    #cv2.imshow('frame', img_roi)
+    #cv2.waitKey(0)
 
     try:
         _, cnts, hierarchy = cv2.findContours(img_roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -186,15 +188,15 @@ class Cameraman():
         self.busy=False
         return msg
     def capture_full(self):
-        print(self.camera.shutter_speed)
-        print(self.camera.awb_gains)
-        print(self.camera.brightness)
-        print(self.camera.contrast)
-        print(self.camera.exposure_speed)
-        print(self.camera.iso)
-        print(self.camera.analog_gain)
-        print(self.camera.digital_gain)
-        print(self.camera.contrast)
+        #print(self.camera.shutter_speed)
+        #print(self.camera.awb_gains)
+        #print(self.camera.brightness)
+        #print(self.camera.contrast)
+        #print(self.camera.exposure_speed)
+        #print(self.camera.iso)
+        #print(self.camera.analog_gain)
+        #print(self.camera.digital_gain)
+        #print(self.camera.contrast)
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
         buf = cv2.cvtColor(self.rawCapture[:], cv2.COLOR_RGB2BGR)
         #check, msg=img_check(buf)
