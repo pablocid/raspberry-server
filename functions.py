@@ -1,5 +1,9 @@
 import numpy as np
 import cv2
+import math
+
+def points_distance(pt1, pt2):
+    return math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
@@ -29,13 +33,28 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return warped
 
+def roi_filter(mask, marker_center=None):
+    try:
+        _, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    except:
+        cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    result=[]
+    for c in cnts:
+        x, y, w, h = cv2.boundingRect(c)
+        cx=int(x+w/2)
+        cy=int(y+h/2)
+        if w*h>mask.shape[1]*mask.shape[0]*0.0001 and points_distance(marker_center, [cx, cy])>mask.shape[0]*0.09:
+            result.append(c)
+    return result
+
+
 def img_check(img, analysis=False):
     frame=img.copy()
     result = []
 
     w_a, h_a = frame.shape[1], frame.shape[0]
 
-    new_x = 860 / img.shape[1]
+    new_x = 875 / img.shape[1]
     img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
     #img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1]
 
@@ -84,11 +103,10 @@ def img_check(img, analysis=False):
     if analysis:
         for n in hierarchy[0]:
             if n[3] == major_area and counter != major_area:
-                if cv2.contourArea(cnts[counter])>comparator*0.0013:
-                    cv2.drawContours(black, cnts, counter, 255, -1)
-                    temp+=1
-                    #cv2.imshow('frame', black)
-                    #cv2.waitKey(0)
+                cv2.drawContours(black, cnts, counter, 255, -1)
+                temp+=1
+                #cv2.imshow('frame', black)
+                #cv2.waitKey(0)
             counter += 1
         kernel = np.ones((5, 5), np.uint8)
         black=cv2.erode(black, kernel, iterations=1)
