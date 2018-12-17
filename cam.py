@@ -95,27 +95,19 @@ class Cameraman():
 
         new_x = 640 / buf.shape[1]
         cv2.imwrite('/home/pi/temp.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
-
         contours, bg_index, obj_mask=img_check(buf)
-
         try:
             test=bg_index+1
         except:
-            print('no_square_background')
             return 'no_square_background'
-
         temp=four_point_transform(buf, contours[bg_index][:, 0, :])
         markers = detect_markers(temp[int(temp.shape[0] * 0.85):, int(temp.shape[1] * 0.85):])
-
         try:
             if markers[0].id!=3116:
-                #print('wrong_marker')
                 return 'wrong_marker'
         except:
-            print('no_marker')
             return 'no_marker'
 
-        print('ok')
         return 'ok'
     def capture_full(self):
         #print(self.camera.shutter_speed)
