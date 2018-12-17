@@ -91,8 +91,7 @@ def img_check(img, analysis=False):
         counter += 1
     #cv2.imshow('frame', black)
     #cv2.waitKey(0)
-    if temp<=1:
-        return [cnts, major_area, None]
+
 
     kernel = np.ones((5, 5), np.uint8)
     return [cnts, major_area, cv2.erode(black, kernel, iterations=1)]

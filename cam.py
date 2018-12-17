@@ -97,20 +97,22 @@ class Cameraman():
 
         contours, bg_index, obj_mask=img_check(buf)
 
-
-        test=bg_index+1
-
-
-
-        obj_mask[0,0]
-
+        try:
+            test=bg_index+1
+        except:
+            print('no_square_background')
+            return 'no_square_background'
 
         temp=four_point_transform(buf, contours[bg_index][:, 0, :])
         markers = detect_markers(temp[int(temp.shape[0] * 0.85):, int(temp.shape[1] * 0.85):])
 
-
-        markers[0].id!=3116
-
+        try:
+            if markers[0].id!=3116:
+                print('wrong_marker')
+                return 'wrong_marker'
+        except:
+            print('no_marker')
+            return 'no_marker'
 
         self.busy=False
         print('ok')
