@@ -100,10 +100,12 @@ class Cameraman():
         try:
             test=bg_index+1
         except:
-            return 'no_square_bg'
+            print('no_square_background')
+            return 'no_square_background'
         try:
             obj_mask[0,0]
         except:
+            print('no_objects')
             return 'no_objects'
 
         temp=four_point_transform(buf, contours[bg_index][:, 0, :])
@@ -111,11 +113,14 @@ class Cameraman():
 
         try:
             if markers[0].id!=3116:
+                print('wrong_marker')
                 return 'wrong_marker'
         except:
+            print('no_marker')
             return 'no_marker'
 
         self.busy=False
+        print('ok')
         return 'ok'
     def capture_full(self):
         #print(self.camera.shutter_speed)
