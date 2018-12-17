@@ -101,6 +101,7 @@ class Cameraman():
             test=bg_index+1
         except:
             print('no_square_background')
+            self.busy = False
             return 'no_square_background'
 
         temp=four_point_transform(buf, contours[bg_index][:, 0, :])
@@ -109,9 +110,11 @@ class Cameraman():
         try:
             if markers[0].id!=3116:
                 print('wrong_marker')
+                self.busy = False
                 return 'wrong_marker'
         except:
             print('no_marker')
+            self.busy = False
             return 'no_marker'
 
         self.busy=False
