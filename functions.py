@@ -81,17 +81,17 @@ def img_check(img, analysis=False):
     black = np.zeros((frame.shape[0], frame.shape[1]), np.uint8)
     #cv2.drawContours(black, cnts, major_area, 255, -1)
 
-    for n in hierarchy[0]:
-        if n[3] == major_area and counter != major_area:
-            if cv2.contourArea(cnts[counter])>comparator*0.0013:
-                cv2.drawContours(black, cnts, counter, 255, -1)
-                temp+=1
-                #cv2.imshow('frame', black)
-                #cv2.waitKey(0)
-        counter += 1
+    if analysis:
+        for n in hierarchy[0]:
+            if n[3] == major_area and counter != major_area:
+                if cv2.contourArea(cnts[counter])>comparator*0.0013:
+                    cv2.drawContours(black, cnts, counter, 255, -1)
+                    temp+=1
+                    #cv2.imshow('frame', black)
+                    #cv2.waitKey(0)
+            counter += 1
+        kernel = np.ones((5, 5), np.uint8)
+        black=cv2.erode(black, kernel, iterations=1)
     #cv2.imshow('frame', black)
     #cv2.waitKey(0)
-
-
-    kernel = np.ones((5, 5), np.uint8)
-    return [cnts, major_area, cv2.erode(black, kernel, iterations=1)]
+    return [cnts, major_area, black]
