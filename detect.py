@@ -120,11 +120,12 @@ def detect_markers(img, original_xy=None):
             marker = validate_and_turn(marker)
             hamming_code = extract_hamming_code(marker)
             marker_id = int(decode(hamming_code), 2)
-
-            box[:, 0] = original_xy[0] - box[:, 0]
-            box[:, 1] = original_xy[1] - box[:, 1]
-
-            markers_list.append(HammingMarker(id=marker_id, contours=box))
+            try:
+                box[:, 0] = original_xy[0] - box[:, 0]
+                box[:, 1] = original_xy[1] - box[:, 1]
+                markers_list.append(HammingMarker(id=marker_id, contours=box))
+            except:
+                markers_list.append(HammingMarker(id=marker_id, contours=box))
         except ValueError:
             continue
     return markers_list

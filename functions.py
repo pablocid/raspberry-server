@@ -34,6 +34,8 @@ def four_point_transform(image, pts):
     return warped
 
 def roi_filter(mask, marker_center=None):
+    if marker_center==None:
+        marker_center=[0,0]
     try:
         _, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     except:
