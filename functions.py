@@ -5,15 +5,12 @@ import math
 def points_distance(pt1, pt2):
     return math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
-import cv2
-import numpy as np
-import math
 from  os import path
 
 dir_path = path.dirname(path.realpath(__file__))
-url_reference = path.join(dir_path, "reference.png")
+#url_reference = path.join(dir_path, "reference.png")
 
-color_reference = path.join(dir_path, "color_reference2.jpg")
+color_reference = path.join(dir_path, "reference.png")
 
 def colorBalance(img, marker_coords):
     """
@@ -41,19 +38,10 @@ def colorBalance(img, marker_coords):
     :return: Colours corrected image as a numpy BGR array.
     """
     colors = ['b', 'g', 'r']
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     #search for the template
 
-    template = cv2.imread(url_reference, 0)
-    w, h = template.shape[::-1]
-    meth = 'cv2.TM_CCOEFF'
-    method = eval(meth)
-    res = cv2.matchTemplate(img_gray, template, method)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-    top_left = max_loc
-    bottom_right = (top_left[0] + w, top_left[1] + h)
-    img_pattern = img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+    img_pattern=four_point_transform(img, marker_coords)
 
     #colour cuantization into 2 colours with k-means clustering
 
@@ -65,33 +53,30 @@ def colorBalance(img, marker_coords):
     center = np.uint8(center)
     res = center[label.flatten()]
     img_pattern = res.reshape((img_pattern.shape))
+    img_pattern = cv2.resize(img_pattern, (7,7), interpolation=cv2.INTER_LINEAR)
 
     #obtain the BGR values from the white area of the matched template
 
-    h_p = img_pattern[0, 0]
+    h_p = img_pattern[3, 3]
 
     # obtain the BGR values from the black area of the matched template
 
-    l_p = img_pattern[math.floor(img_pattern.shape[0] / 2), math.floor(img_pattern.shape[1] / 2)]
-    if h_p.all() == l_p.all():
-        h_p = img_pattern[img_pattern.shape[0] - 1, img_pattern.shape[1] - 1]
+    l_p = img_pattern[0,0]
 
 
 
     img_pattern=[h_p,l_p]
-    img_reference = cv2.imread(color_reference, 1)
-    Z = img_reference.reshape((-1, 3))
-    Z = np.float32(Z)
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    K = 2
-    ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    center = np.uint8(center)
-    res = center[label.flatten()]
-    img_reference = res.reshape((img_reference.shape))
 
-    h_r=img_reference[0, 0]
-    l_r=img_reference[math.floor(img_reference.shape[0] / 2), math.floor(img_reference.shape[1] / 2)]
+    img_reference = cv2.imread(color_reference, 1)
+
+
+
+    h_r=img_reference[3, 3]
+    l_r=img_reference[0,0]
     img_reference=[h_r, l_r]
+
+
+
     lut = []
     for n in range(len(colors)):
         lut.append(np.zeros((256), np.uint8))
