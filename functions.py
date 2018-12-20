@@ -167,8 +167,8 @@ def img_check(img, analysis=False):
     M = np.ones((2, 2), np.uint8)
     img_roi = cv2.dilate(img_roi, M, iterations=1)
 
-    #cv2.imshow('frame', img_roi)
-    #cv2.waitKey(0)
+    cv2.imshow('frame', img_roi)
+    cv2.waitKey(0)
 
     try:
         _, cnts, hierarchy = cv2.findContours(img_roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -205,7 +205,7 @@ def img_check(img, analysis=False):
 
     if analysis:
         for n in hierarchy[0]:
-            if n[3] == major_area and counter != major_area:
+            if n[3] == major_area and counter != major_area and len(cnts[counter])>10:
                 cv2.drawContours(black, cnts, counter, 255, -1)
                 #result.append(cnts[counter])
                 #cv2.imshow('frame', black)
@@ -213,9 +213,9 @@ def img_check(img, analysis=False):
             counter += 1
     else:
         for n in hierarchy[0]:
-            if n[3] == major_area and counter != major_area:
-                cv2.drawContours(black, cnts, counter, 255, -1)
-                #result.append(cnts[counter])
+            if n[3] == major_area and counter != major_area and len(cnts[counter])>10:
+                #cv2.drawContours(black, cnts, counter, 255, -1)
+                result.append(cnts[counter])
                 #cv2.imshow('frame', black)
                 #cv2.waitKey(0)
             counter += 1
