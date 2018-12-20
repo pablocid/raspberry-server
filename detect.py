@@ -5,7 +5,7 @@ except ImportError:
 
 import numpy as np
 from ar_markers.coding import decode, extract_hamming_code
-from ar_markers.marker import HammingMarker
+from marker import HammingMarker
 
 BORDER_COORDINATES = [
     [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [1, 0], [1, 6], [2, 0], [2, 6], [3, 0],
@@ -70,7 +70,7 @@ def validate_and_turn(marker):
     return marker
 
 
-def detect_markers(img, original_xy=None):
+def detect_markers(img, area_thresh=100):
     """
     This is the main function for detecting markers in an image.
 
@@ -93,7 +93,7 @@ def detect_markers(img, original_xy=None):
     contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
 
     # We only keep the long enough contours
-    min_contour_length = width*height / 10
+    min_contour_length = width*height / area_thresh
 
     markers_list = []
     for contour in contours:
@@ -120,12 +120,7 @@ def detect_markers(img, original_xy=None):
             marker = validate_and_turn(marker)
             hamming_code = extract_hamming_code(marker)
             marker_id = int(decode(hamming_code), 2)
-            try:
-                box[:, 0] = original_xy[0] - box[:, 0]
-                box[:, 1] = original_xy[1] - box[:, 1]
-                markers_list.append(HammingMarker(id=marker_id, contours=box))
-            except:
-                markers_list.append(HammingMarker(id=marker_id, contours=box))
+            markers_list.append(HammingMarker(id=marker_id, contours=box))
         except ValueError:
             continue
     return markers_list

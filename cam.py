@@ -95,7 +95,11 @@ class Cameraman():
 
         new_x = 640 / buf.shape[1]
         cv2.imwrite('/home/pi/temp.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
-        contours, bg_index, obj_mask=img_check(buf)
+        contours, bg_index, _=img_check(buf)
+
+        if len(contours)<=1:
+            return 'no objects'
+
         try:
             test=bg_index+1
         except:
