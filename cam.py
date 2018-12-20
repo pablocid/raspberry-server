@@ -97,7 +97,7 @@ class Cameraman():
         cv2.imwrite('/home/pi/temp.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
         contours, bg_index, _=img_check(buf)
 
-        if len(contours)<=1:
+        if len(contours)<=2:
             return 'no objects'
 
         try:
