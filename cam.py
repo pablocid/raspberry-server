@@ -95,16 +95,16 @@ class Cameraman():
 
         new_x = 640 / buf.shape[1]
         cv2.imwrite('/home/pi/temp.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
-        contours, bg_index, _=img_check(buf)
+        contours, bg_cnt, _=img_check(buf)
 
         if len(contours)<=1:
             return 'no objects'
 
         try:
-            test=bg_index+1
+            test=bg_cnt[0]
         except:
             return 'no_square_background'
-        temp=four_point_transform(buf, contours[bg_index][:, 0, :])
+        temp=four_point_transform(buf, bg_cnt[:, 0, :])
         markers = detect_markers(temp[int(temp.shape[0] * 0.85):, int(temp.shape[1] * 0.85):])
         try:
             if markers[0].id!=3116:
