@@ -207,9 +207,10 @@ def img_check(img, analysis=False):
         for n in hierarchy[0]:
             if n[3] == major_area and counter != major_area:
                 cv2.drawContours(black, cnts, counter, 255, -1)
+                result.append(cnts[counter])
                 #cv2.imshow('frame', black)
                 #cv2.waitKey(0)
             counter += 1
     #cv2.imshow('frame', black)
     #cv2.waitKey(0)
-    return [cnts, major_area, black]
+    return [result, cnts[major_area], black]
