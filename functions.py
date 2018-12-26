@@ -1,16 +1,79 @@
 import numpy as np
 import cv2
 import math
+from  os import path, listdir
+
+dir_path = path.dirname(path.realpath(__file__))
 
 def points_distance(pt1, pt2):
     return math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
-from  os import path
+def contour_crop(img, cnt):
+    temp = img[np.min(cnt[:, 0, 1]):np.max(cnt[:,0,1])+1, np.min(cnt[:, 0, 0]):np.max(cnt[:,0,0])+1]
+    cnt[:, 0, 0] = cnt[:, 0, 0] - np.min(cnt[:, 0, 0])
+    cnt[:, 0, 1] = cnt[:, 0, 1] - np.min(cnt[:, 0, 1])
+    black=np.zeros((np.max(cnt[:,0,1])+1, np.max(cnt[:,0,0])+1), np.uint8)
+    cv2.drawContours(black, [cnt], -1, 255, -1)
+    return cv2.bitwise_and(temp, temp, mask=black)
 
-dir_path = path.dirname(path.realpath(__file__))
-#url_reference = path.join(dir_path, "reference.png")
+def tmpl_mask(img, tmpl_parsed):
 
-color_reference = path.join(dir_path, "reference.png")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2Lab)
+
+    masked = ''
+
+    for n in tmpl_parsed:
+
+        boundaries_c = [(
+            [
+                0,
+                range(0, 257, 8)[n[1]],
+                range(0, 257, 8)[::-1][n[0] + 1]
+            ],  # lower
+            [
+                250 * n[2],
+                range(0, 257, 8)[n[1] + 1] - 1,
+                range(0, 257, 8)[::-1][n[0]] - 1
+            ]  # upper
+        )]
+
+        for (lower, upper) in boundaries_c:
+            lower = np.array(lower, dtype="uint8")
+            upper = np.array(upper, dtype="uint8")
+
+        c_mask = cv2.inRange(img, lower, upper)
+
+        if type(masked) == str:
+            masked = c_mask
+
+        masked = cv2.add(masked, c_mask)
+
+    output = cv2.bitwise_and(img, img, mask=masked)
+    output = cv2.cvtColor(output, cv2.COLOR_Lab2BGR)
+    count = cv2.countNonZero(masked)
+    return (output, count)
+
+def template_reader(directory):
+    result=[]
+    if directory[-1]!='/':
+        directory+='/'
+    for n in listdir(directory):
+        if '.tsv' not in n:
+            continue
+        filess = open(directory+n, 'r')
+        filess_tab = filess.read().replace('\n', '\t').split('\t')
+        if filess_tab[len(filess_tab) - 1] == '':
+            filess_tab = filess_tab[:len(filess_tab) - 1]
+        filess.close()
+        filess_tab = [float(n) for n in filess_tab]
+        filess_tab = np.asarray(filess_tab)
+        chromatic_arr = filess_tab.reshape(32, 32)
+        filess_tab = np.argwhere(chromatic_arr > 0 )
+        n_arr = []
+        for (x, y) in filess_tab:
+            n_arr.append([x, y, chromatic_arr[x][y]])
+        result.append(n_arr)
+    return result
 
 def colorBalance(img, marker_coords):
     """
@@ -37,11 +100,12 @@ def colorBalance(img, marker_coords):
     :param img: numpy BGR array. The black square in the frame should measure 30x30 to 100x100 px.
     :return: Colours corrected image as a numpy BGR array.
     """
+    color_reference = path.join(dir_path, "reference.png")
     colors = ['b', 'g', 'r']
 
     #search for the template
 
-    img_pattern=four_point_transform(img, marker_coords)
+    img_pattern, _=four_point_transform(img, marker_coords)
 
     #colour cuantization into 2 colours with k-means clustering
 
@@ -115,29 +179,28 @@ def four_point_transform(image, pts):
         [0, maxHeight - 1]], dtype="float32")
     M = cv2.getPerspectiveTransform(rect, dst)
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-    return warped
+    return [warped, M]
 
-def roi_filter(mask, marker_center=None):
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv2.erode(mask, kernel, iterations=1)
-
+def roi_filter(resolution_xy, contours, marker_center=None):
     if marker_center==None:
         marker_center=[0,0]
-    try:
-        _, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    except:
-        cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     result=[]
-    for c in cnts:
+    for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         cx=int(x+w/2)
         cy=int(y+h/2)
-        if w*h>mask.shape[1]*mask.shape[0]*0.0001 and points_distance(marker_center, [cx, cy])>mask.shape[0]*0.09:
+        if w*h>resolution_xy[0]*resolution_xy[1]*0.0001 and points_distance(marker_center, [cx, cy])>resolution_xy[1]*0.09:
             result.append(c)
     return result
 
+def contour_transform(contours_list, perspective_matrix):
+    result=[]
+    for cnt in contours_list:
+        cnt = cv2.perspectiveTransform(cnt.reshape(1, len(cnt), 2).astype('float32'), perspective_matrix)
+        result.append(cnt.reshape(len(cnt[0]), 1, 2).astype('int'))
+    return result
 
-def img_check(img, analysis=False):
+def img_check(img):
     frame=img.copy()
     result = []
 
@@ -145,9 +208,7 @@ def img_check(img, analysis=False):
 
     new_x = 875 / img.shape[1]
     img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
-    #img_roi = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1]
-
-    check = False
+    img = cv2.GaussianBlur(img, (5, 5), 0)
     img_roi = cv2.bitwise_or(cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1], 80, 100), cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 100, 100))
     M = np.ones((2, 2), np.uint8)
     img_roi = cv2.dilate(img_roi, M, iterations=1)
@@ -181,29 +242,27 @@ def img_check(img, analysis=False):
     major_area=temp
 
     if temp > 0 and len(cv2.approxPolyDP(cnts[major_area], 0.04*cv2.arcLength(cnts[major_area],True),True))!=4:
-        return [cnts, None, None]
+        return [cnts, None]
 
     cnts[major_area]=cv2.approxPolyDP(cnts[major_area], 0.04*cv2.arcLength(cnts[major_area],True),True)
     counter = 0
-    black = np.zeros((frame.shape[0], frame.shape[1]), np.uint8)
-    #cv2.drawContours(black, cnts, major_area, 255, -1)
 
-    if analysis:
-        for n in hierarchy[0]:
-            if n[3] == major_area and counter != major_area and len(cnts[counter])>10:
-                cv2.drawContours(black, cnts, counter, 255, -1)
-                #result.append(cnts[counter])
-                #cv2.imshow('frame', black)
-                #cv2.waitKey(0)
-            counter += 1
-    else:
-        for n in hierarchy[0]:
-            if n[3] == major_area and counter != major_area and len(cnts[counter])>10:
-                #cv2.drawContours(black, cnts, counter, 255, -1)
-                result.append(cnts[counter])
-                #cv2.imshow('frame', black)
-                #cv2.waitKey(0)
-            counter += 1
-    #cv2.imshow('frame', black)
-    #cv2.waitKey(0)
-    return [result, cnts[major_area], black]
+    for n in hierarchy[0]:
+        if n[3] == major_area and counter != major_area and len(cnts[counter])>10:
+            result.append(cnts[counter])
+        counter += 1
+    return [result, cnts[major_area]]
+
+def berry_shape(cnt, factor=1):
+
+    area=cv2.contourArea(cnt)
+    _, (MA, ma), _ = cv2.fitEllipse(cnt)
+
+    #cnt[:, 0, 0] = cnt[:, 0, 0] - np.min(cnt[:, 0, 0])
+    #cnt[:, 0, 1] = cnt[:, 0, 1] - np.min(cnt[:, 0, 1])
+    #black=np.zeros((max(cnt[:,0,1])+1, np.max(cnt[:,0,0])+1), np.uint8)
+    #cv2.drawContours(black, [cnt], -1, 255, -1)
+    #result.append([MA * factor, ma * factor, area, np.count_nonzero(black)])
+
+
+    return [MA * factor, ma * factor, area*(factor**2)]
