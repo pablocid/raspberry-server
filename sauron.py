@@ -82,6 +82,10 @@ class Entry_control():
 
     def load_local(self):
         temp=[]
+        if 'local_spreadsheet.tsv' not in os.listdir('./'):
+            file = open('./local_spreadsheet.tsv', 'w')
+            file.close()
+            return temp
         file = open('./local_spreadsheet.tsv', 'r')
         text=file.read().split('\n')
         file.close()
