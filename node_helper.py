@@ -1,33 +1,42 @@
 import sys, getopt, socket, time
 def main(argv):
-    inputfile = ''
+    instruction = ''
+    inputname = ''
     try:
-        opts, args = getopt.getopt(argv,"hi:",["instruction=",])
+        opts, args = getopt.getopt(argv,"hi:n:",["instruction=", 'photoname='])
     except getopt.GetoptError:
-        print('-i <inputinstruction>')
+        print('-i <inputinstruction> -n <photoname>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print('-i <inputinstruction>')
             sys.exit()
         elif opt in ("-i", "--instruction"):
-            inputfile = arg
+            instruction = arg
+        elif opt in ("-n", "--photoname"):
+            inputname = arg
     s = socket.socket()
     s.settimeout(1)
+    if len(inputname)>0:
+        s2 = socket.socket()
+        s2.settimeout(1)
     try:
         s.connect(('localhost', 8008))
+        if len(inputname)>0:
+            s2.connect(('localhost', 8009))
     except:
         raise ConnectionError
     try:
-        s.send(inputfile.encode('utf-8'))
+        s.send(instruction.encode('utf-8'))
         a=s.recv(1024).decode('utf-8')
+        if a == 'done':
+            if len(inputname) > 0:
+                s2.send(inputname.encode('utf-8'))
+                b = s2.recv(1024).decode('utf-8')
     except:
         print('time_out', end='')
         sys.exit()
-        return
-    #time.sleep(0.5)
     print(a, end='')
-    #return a
     sys.exit()
 
 if __name__ == "__main__":
