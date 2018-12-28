@@ -16,10 +16,10 @@ def main(argv):
         elif opt in ("-n", "--photoname"):
             inputname = arg
     s = socket.socket()
-    s.settimeout(1)
+    s.settimeout(3)
     if len(inputname)>0:
         s2 = socket.socket()
-        s2.settimeout(1)
+        s2.settimeout(3)
     try:
         s.connect(('localhost', 8008))
         if len(inputname)>0:
