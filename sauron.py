@@ -69,7 +69,7 @@ class Entry_control():
     def add_new(self, name):
         if not self.query_local(name):
             try:
-                if len(self.sheet.findall('name'))==0:
+                if len(self.sheet.findall(name))==0:
                     self.sheet.append_row([name, self.ipid, datetime.datetime.now().strftime("%Y%m%d_%H%M%S")])
                     self.gstate='online'
                     return True
