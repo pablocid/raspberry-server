@@ -3,7 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import os
 import datetime
 import socket
-
+import threading
 #dir_path = path.dirname(path.realpath(__file__))
 #'C:/Users/INIA_vaio_i5/Documents/GitHub/raspberry-server'
 # use creds to create a client to interact with the Google Drive API
@@ -43,6 +43,8 @@ class Entry_control():
             print('no json credential found')
         except:
             print("Can't access web service")
+        t1 = threading.Thread(target=self.server_call, )
+        t1.start()
 
     def server_call(self):
         s = socket.socket()
