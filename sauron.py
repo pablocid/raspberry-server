@@ -45,6 +45,7 @@ class Entry_control():
             print("Can't access web service")
         t1 = threading.Thread(target=self.server_call, )
         t1.start()
+        print('google is watching you')
 
     def server_call(self):
         s = socket.socket()
