@@ -5,10 +5,10 @@ import threading
 import socket
 import numpy as np
 import cv2
-from detect import detect_markers
+from detect import detect_markers, detect_markers_integrated
 from subprocess import check_output
 from fractions import Fraction
-from functions import img_check, four_point_transform
+from functions import img_check, four_point_transform, contour_transform
 BRIGHT=0
 ISO=0
 SHUTTER=0
@@ -89,30 +89,29 @@ class Cameraman():
         t1.start()
         self.busy = False
         print('Camera ready')
+
     def capture_preview(self):
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
         buf = cv2.cvtColor(self.rawCapture[:, :1640], cv2.COLOR_RGB2BGR)
-
         new_x = 640 / buf.shape[1]
         cv2.imwrite('/home/pi/temp.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
         contours, bg_cnt=img_check(buf)
-
-        if len(contours)<=1:
-            return 'no objects'
-
         try:
             test=bg_cnt[0]
         except:
             return 'no_square_background'
-        temp, _=four_point_transform(buf, bg_cnt[:, 0, :])
-        markers = detect_markers(temp[int(temp.shape[0] * 0.85):, int(temp.shape[1] * 0.85):])
+        buf, persp_mtx = four_point_transform(buf, bg_cnt[:, 0, :])
+        contours = contour_transform(contours, persp_mtx)
+        markers, contours = detect_markers_integrated(buf, contours)
+        if len(contours)==0:
+            return 'no_objects'
         try:
             if markers[0].id!=3116:
                 return 'wrong_marker'
         except:
             return 'no_marker'
-
         return 'ok'
+
     def capture_full(self):
         #print(self.camera.shutter_speed)
         #print(self.camera.awb_gains)
