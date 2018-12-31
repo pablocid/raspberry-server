@@ -8,50 +8,67 @@ dir_path = path.dirname(path.realpath(__file__))
 def points_distance(pt1, pt2):
     return math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
-def contour_crop(img, cnt):
-    temp = img[np.min(cnt[:, 0, 1]):np.max(cnt[:,0,1])+1, np.min(cnt[:, 0, 0]):np.max(cnt[:,0,0])+1]
+def contour_crop(img, cnt, background=False):
+    temp = img[np.min(cnt[:, 0, 1]):np.max(cnt[:,0,1]), np.min(cnt[:, 0, 0]):np.max(cnt[:,0,0])]
+    if background:
+        return temp
     cnt[:, 0, 0] = cnt[:, 0, 0] - np.min(cnt[:, 0, 0])
     cnt[:, 0, 1] = cnt[:, 0, 1] - np.min(cnt[:, 0, 1])
-    black=np.zeros((np.max(cnt[:,0,1])+1, np.max(cnt[:,0,0])+1), np.uint8)
+    black=np.zeros((np.max(cnt[:,0,1]), np.max(cnt[:,0,0])), np.uint8)
     cv2.drawContours(black, [cnt], -1, 255, -1)
     return cv2.bitwise_and(temp, temp, mask=black)
 
-def tmpl_mask(img, tmpl_parsed):
-
+def tmpl_mask(img, tmpls_parsed, factor=1, cnts=None, prev_result=None, prev_header=None):
+    try:
+        cnts[0][0]
+    except:
+        cnts=[np.asarray([(0,0), (0, img.shape[0]), (img.shape[1], img.shape[0]), (img.shape[1], 0)]).reshape(4,1,2)]
     img = cv2.cvtColor(img, cv2.COLOR_BGR2Lab)
+    if prev_result==None:
+        result=[]
+    else:
+        result=prev_result.copy()
+    counter=0
+    if prev_header==None:
+        header=[]
+    else:
+        header=prev_header.copy()
+    for cnt in cnts:
+        if prev_result==None:
+            result.append([])
 
-    masked = ''
+        img_temp=contour_crop(img, cnt)
+        for (name,tmpl_parsed) in tmpls_parsed:
+            if counter==0:
+                header.append(name+'_area')
+            masked = ''
+            for n in tmpl_parsed:
+                boundaries_c = [(
+                    [
+                        0,
+                        range(0, 257, 8)[n[1]],
+                        range(0, 257, 8)[::-1][n[0] + 1]
+                    ],  # lower
+                    [
+                        250 * n[2],
+                        range(0, 257, 8)[n[1] + 1] - 1,
+                        range(0, 257, 8)[::-1][n[0]] - 1
+                    ]  # upper
+                )]
+                for (lower, upper) in boundaries_c:
+                    lower = np.array(lower, dtype="uint8")
+                    upper = np.array(upper, dtype="uint8")
+                c_mask = cv2.inRange(img_temp, lower, upper)
+                if type(masked) == str:
+                    masked = c_mask
 
-    for n in tmpl_parsed:
-
-        boundaries_c = [(
-            [
-                0,
-                range(0, 257, 8)[n[1]],
-                range(0, 257, 8)[::-1][n[0] + 1]
-            ],  # lower
-            [
-                250 * n[2],
-                range(0, 257, 8)[n[1] + 1] - 1,
-                range(0, 257, 8)[::-1][n[0]] - 1
-            ]  # upper
-        )]
-
-        for (lower, upper) in boundaries_c:
-            lower = np.array(lower, dtype="uint8")
-            upper = np.array(upper, dtype="uint8")
-
-        c_mask = cv2.inRange(img, lower, upper)
-
-        if type(masked) == str:
-            masked = c_mask
-
-        masked = cv2.add(masked, c_mask)
-
-    output = cv2.bitwise_and(img, img, mask=masked)
-    output = cv2.cvtColor(output, cv2.COLOR_Lab2BGR)
-    count = cv2.countNonZero(masked)
-    return (output, count)
+                masked = cv2.add(masked, c_mask)
+            if prev_result==None:
+                result[-1].append(cv2.countNonZero(masked) * (factor ** 2))
+            else:
+                result[counter].append(cv2.countNonZero(masked) * (factor ** 2))
+        counter+=1
+    return [result, header]
 
 def template_reader(directory):
     result=[]
@@ -72,7 +89,7 @@ def template_reader(directory):
         n_arr = []
         for (x, y) in filess_tab:
             n_arr.append([x, y, chromatic_arr[x][y]])
-        result.append(n_arr)
+        result.append([n[:-4], n_arr])
     return result
 
 def colorBalance(img, marker_coords):
@@ -102,13 +119,9 @@ def colorBalance(img, marker_coords):
     """
     color_reference = path.join(dir_path, "reference.png")
     colors = ['b', 'g', 'r']
-
     #search for the template
-
     img_pattern, _=four_point_transform(img, marker_coords)
-
     #colour cuantization into 2 colours with k-means clustering
-
     Z = img_pattern.reshape((-1, 3))
     Z = np.float32(Z)
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -118,29 +131,15 @@ def colorBalance(img, marker_coords):
     res = center[label.flatten()]
     img_pattern = res.reshape((img_pattern.shape))
     img_pattern = cv2.resize(img_pattern, (7,7), interpolation=cv2.INTER_LINEAR)
-
     #obtain the BGR values from the white area of the matched template
-
     h_p = img_pattern[3, 3]
-
     # obtain the BGR values from the black area of the matched template
-
     l_p = img_pattern[0,0]
-
-
-
     img_pattern=[h_p,l_p]
-
     img_reference = cv2.imread(color_reference, 1)
-
-
-
     h_r=img_reference[3, 3]
     l_r=img_reference[0,0]
     img_reference=[h_r, l_r]
-
-
-
     lut = []
     for n in range(len(colors)):
         lut.append(np.zeros((256), np.uint8))
@@ -181,15 +180,13 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     return [warped, M]
 
-def roi_filter(resolution_xy, contours, marker_center=None):
-    if marker_center==None:
-        marker_center=[0,0]
+def roi_filter(resolution_xy, contours):
     result=[]
     for c in contours:
         x, y, w, h = cv2.boundingRect(c)
         cx=int(x+w/2)
         cy=int(y+h/2)
-        if w*h>resolution_xy[0]*resolution_xy[1]*0.0001 and points_distance(marker_center, [cx, cy])>resolution_xy[1]*0.09:
+        if w*h>resolution_xy[0]*resolution_xy[1]*0.0001:
             result.append(c)
     return result
 
@@ -253,16 +250,47 @@ def img_check(img):
         counter += 1
     return [result, cnts[major_area]]
 
-def berry_shape(cnt, factor=1):
-
-    area=cv2.contourArea(cnt)
-    _, (MA, ma), _ = cv2.fitEllipse(cnt)
-
+def berry_shape(cnts, factor=1, prev_result=None, prev_header=None):
+    if prev_header==None:
+        header=['major_diameter', 'minor_diameter', 'area']
+    else:
+        header=prev_header+['major_diameter', 'minor_diameter', 'area']
+    if prev_result==None:
+        result=[]
+    else:
+        result=prev_result.copy()
+    counter=0
+    for cnt in cnts:
+        area=cv2.contourArea(cnt)
+        _, (MA, ma), _ = cv2.fitEllipse(cnt)
+        if prev_result==None:
+            result.append([MA * factor, ma * factor, area*(factor**2)])
+        else:
+            result[counter]=result[counter]+[MA * factor, ma * factor, area*(factor**2)]
+        counter+=1
+    return [result, header]
     #cnt[:, 0, 0] = cnt[:, 0, 0] - np.min(cnt[:, 0, 0])
     #cnt[:, 0, 1] = cnt[:, 0, 1] - np.min(cnt[:, 0, 1])
     #black=np.zeros((max(cnt[:,0,1])+1, np.max(cnt[:,0,0])+1), np.uint8)
     #cv2.drawContours(black, [cnt], -1, 255, -1)
     #result.append([MA * factor, ma * factor, area, np.count_nonzero(black)])
 
-
-    return [MA * factor, ma * factor, area*(factor**2)]
+def rachis_shape(cnts, factor=1, prev_result=None, prev_header=None):
+    if prev_header==None:
+        header=['width', 'height', 'area']
+    else:
+        header=prev_header+['width', 'height', 'area']
+    if prev_result==None:
+        result=[]
+    else:
+        result=prev_result.copy()
+    counter=0
+    for cnt in cnts:
+        area=cv2.contourArea(cnt)
+        _, (width, height), _=cv2.minAreaRect(cnt)
+        if prev_result==None:
+            result.append([width * factor, height * factor, area*(factor**2)])
+        else:
+            result[counter]=result[counter]+[width * factor, height * factor, area*(factor**2)]
+        counter+=1
+    return [result, header]

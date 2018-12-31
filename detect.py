@@ -6,6 +6,7 @@ except ImportError:
 import numpy as np
 from ar_markers.coding import decode, extract_hamming_code
 from marker import HammingMarker
+from functions import contour_crop
 
 BORDER_COORDINATES = [
     [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [1, 0], [1, 6], [2, 0], [2, 6], [3, 0],
@@ -124,3 +125,67 @@ def detect_markers(img, area_thresh=100):
         except ValueError:
             continue
     return markers_list
+
+def detect_markers_integrated(img, contours, area_thresh=100):
+    """
+    This is the main function for detecting markers in an image.
+
+    Input:
+      img: a color or grayscale image that may or may not contain a marker.
+
+    Output:
+      a list of found markers. If no markers are found, then it is an empty list.
+    """
+    #cv2.namedWindow('watcher', cv2.WINDOW_NORMAL)
+    if len(img.shape) > 2:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img.copy()
+
+    width, height = gray.shape
+    #img = cv2.Canny(img, 100, 255)
+    #M = np.ones((2, 2), np.uint8)
+    #img = cv2.dilate(img, M, iterations=1)
+
+    #contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+
+    # We only keep the long enough contours
+    min_contour_length = width*height / area_thresh
+
+    markers_list = []
+    new_contours=[]
+    for contour in contours:
+        rect = cv2.minAreaRect(contour)
+
+        if rect[1][0]*rect[1][1] <= min_contour_length:
+            new_contours.append(contour)
+            continue
+
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+
+        if np.min(box)<0 or np.max(box[:,0])>gray.shape[1] or np.max(box[:,1])>gray.shape[0]:
+            new_contours.append(contour)
+            continue
+
+        #warped_gray = contour_crop(gray, box.reshape(4,1,2), background=True)
+        warped_gray = four_point_transform(gray, box)
+        umbral = 120
+        _, warped_bin = cv2.threshold(warped_gray, umbral, 255, cv2.THRESH_BINARY)
+
+        marker = cv2.resize(warped_bin, (7,7), interpolation=cv2.INTER_LINEAR)
+
+        #cv2.imshow('frame', marker)
+        #cv2.waitKey(0)
+
+        marker[marker < 255] = 0
+        marker[marker == 255] = 1
+        try:
+            marker = validate_and_turn(marker)
+            hamming_code = extract_hamming_code(marker)
+            marker_id = int(decode(hamming_code), 2)
+            markers_list.append(HammingMarker(id=marker_id, contours=box))
+        except ValueError:
+            new_contours.append(contour)
+            continue
+    return [markers_list, new_contours]
