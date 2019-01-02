@@ -15,14 +15,14 @@ def main(argv):
             instruction = arg
         elif opt in ("-n", "--photoname"):
             inputname = arg
-
+    s = socket.socket()
+    s.settimeout(3)
+    if len(inputname)>0:
+        s2 = socket.socket()
+        s2.settimeout(3)
     try:
-        s = socket.socket()
-        s.settimeout(3)
         s.connect(('localhost', 8008))
         if len(inputname)>0:
-            s2 = socket.socket()
-            s2.settimeout(3)
             s2.connect(('localhost', 8009))
     except:
         raise ConnectionError
@@ -31,24 +31,17 @@ def main(argv):
         a=s.recv(1024).decode('utf-8')
         if a == 'done':
             if len(inputname) > 0:
-                try:
-                    s2.send(inputname.encode('utf-8'))
-                    b = s2.recv(1024).decode('utf-8')
-                    print(b, end='')
-                    sys.exit()
-                except:
-                    print('time_out_b', end='')
-                    sys.exit()
-            else:
-                print(a, end='')
-                sys.exit()
-        else:
-            print(a, end='')
+                s2.send(inputname.encode('utf-8'))
+                b = s2.recv(1024).decode('utf-8')
     except:
-        print('time_out_a', end='')
+        print('time_out', end='')
         sys.exit()
-
-
+    if len(inputname) > 0:
+        print(b, end='')
+        sys.exit()
+    else:
+        print(a, end='')
+        sys.exit()
 
 if __name__ == "__main__":
    main(sys.argv[1:])
