@@ -31,8 +31,11 @@ def main(argv):
         a=s.recv(1024).decode('utf-8')
         if a == 'done':
             if len(inputname) > 0:
-                s2.send(inputname.encode('utf-8'))
-                b = s2.recv(1024).decode('utf-8')
+                try:
+                    s2.send(inputname.encode('utf-8'))
+                    b = s2.recv(1024).decode('utf-8')
+                except:
+                    b='no_sauron'
     except:
         print('time_out', end='')
         sys.exit()
