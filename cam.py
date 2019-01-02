@@ -70,8 +70,10 @@ class Cameraman():
             if a == 'capture':
                 if not self.busy:
                     self.busy=True
-                    msg=self.capture_full()
+                    #msg=self.capture_full()
+                    msg = 'done'
                     c.send(msg.encode('utf-8'))
+                    self.busy=False
                 else:
                     c.send('busy'.encode('utf-8'))
             if a == 'preview':
