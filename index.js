@@ -94,7 +94,7 @@ app.get('/capture', function (req, res) {
         res.send('Error: el nombre no existe');
         return;
     }
-    const name = req.query.name;
+    const name = query.name;
     console.log('name', name);
 
     console.log('creating streaming');
