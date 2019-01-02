@@ -113,6 +113,8 @@ class Entry_control():
 
     def try_sync(self):
         temp=self.load_local()
+        file = open('./local_spreadsheet.tsv', 'w')
+        file.close()
         for n in range(len(temp)):
             if temp[n][3]=='no_sync':
                 try:
