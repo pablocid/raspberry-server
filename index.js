@@ -85,32 +85,24 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    const query = req.query;
-    console.log('query', query);
-    if (!query) {
-        console.log("Dentro del IF");
-        console.log(req.query);
+    console.log(req.query);
+    if (!req.query || !req.query.name) {
         res.status(208);
-        res.send('Error: el nombre no existe');
+        res.send();
         return;
     }
-    const name = query.name;
-    console.log('name', name);
+    const name = req.query.name;
 
-    console.log('creating streaming');
-    const reading = createReadStream("/home/pi/capture.png");
-    console.log('readding pipeline');
-    reading.pipe(res);
-    console.log('OK readding');
-    console.log('sauron executing ....')
-    exec('python3 node_helper.py -i capture -n ' + name);
     try {
-
+        console.log('sauron executing ....')
+        execAsync('python3 node_helper.py -i capture -n ' + name);
     } catch (e) {
         res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
         return;
     }
 
+    const reading = createReadStream("/home/pi/capture.png");
+    reading.pipe(res);
 
     // try {
     //     const reading = createReadStream(imgFile);
