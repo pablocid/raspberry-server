@@ -92,15 +92,17 @@ app.get('/capture', function (req, res) {
         return;
     }
     const name = req.query.name;
-    const reading = createReadStream("/home/pi/capture.png");
-    reading.pipe(res);
 
     try {
         console.log('sauron executing ....')
         execAsync('python3 node_helper.py -i capture -n ' + name);
     } catch (e) {
-        // res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
+        res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
+        return;
     }
+
+    const reading = createReadStream("/home/pi/capture.png");
+    reading.pipe(res);
 
     // try {
     //     const reading = createReadStream(imgFile);
