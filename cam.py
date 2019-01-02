@@ -94,7 +94,8 @@ class Cameraman():
         self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
         buf = cv2.cvtColor(self.rawCapture[:, :1640], cv2.COLOR_RGB2BGR)
         new_x = 640 / buf.shape[1]
-        cv2.imwrite('/home/pi/temp.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
+        cv2.imwrite('/home/pi/capture.png',buf)
+        cv2.imwrite('/home/pi/preview.png', cv2.resize(buf, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR))
         contours, bg_cnt=img_check(buf)
         try:
             test=bg_cnt[0]
@@ -122,10 +123,13 @@ class Cameraman():
         #print(self.camera.analog_gain)
         #print(self.camera.digital_gain)
         #print(self.camera.contrast)
-        self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
-        buf = cv2.cvtColor(self.rawCapture[:, :1640], cv2.COLOR_RGB2BGR)
+
+        #self.camera.capture(self.rawCapture, format="rgb", use_video_port=False)
+        #buf = cv2.cvtColor(self.rawCapture[:, :1640], cv2.COLOR_RGB2BGR)
+
         #check, msg=img_check(buf)
-        cv2.imwrite('/home/pi/temp.png', buf)
+
+        #cv2.imwrite('/home/pi/temp.png', buf)
         self.busy=False
         return 'done'
     def photo_precheck(self, np_image):

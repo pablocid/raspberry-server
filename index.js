@@ -58,7 +58,7 @@ const errorMessage = [
 ];
 
 app.get('/preview', function (req, res) {
-    const imgFile = "/home/pi/temp.png";
+    const imgFile = "/home/pi/preview.png";
     let frame;
     try {
         frame = exec('python3 node_helper.py -i preview');
@@ -84,7 +84,7 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    const imgFile = "/home/pi/temp.png";
+    const imgFile = "/home/pi/capture.png";
     try {
         exec('python3 node_helper.py -i capture');
     } catch (e) {
