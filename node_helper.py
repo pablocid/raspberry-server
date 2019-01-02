@@ -37,7 +37,7 @@ def main(argv):
         print('time_out', end='')
         sys.exit()
     if len(inputname) > 0:
-        print(a+'_'+b, end='')
+        print(b, end='')
         sys.exit()
     else:
         print(a, end='')
