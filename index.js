@@ -85,8 +85,9 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
+    console.log(req.query);
     if (!req.query || !req.query.name) {
-        res.status(201);
+        res.status(208);
         res.send();
         return;
     }
