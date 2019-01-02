@@ -85,7 +85,8 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    if (!req.query || !req.query.name) {
+    const query = JSON.parse(req.query);
+    if (!query) {
         console.log("Dentro del IF");
         console.log(req.query);
         res.status(208);
