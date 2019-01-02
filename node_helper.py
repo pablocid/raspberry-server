@@ -37,13 +37,13 @@ def main(argv):
                     print(b, end='')
                     sys.exit()
                 except:
-                    print('time_out', end='')
+                    print('time_out_b', end='')
                     sys.exit()
             else:
                 print(a, end='')
                 sys.exit()
     except:
-        print('time_out', end='')
+        print('time_out_a', end='')
         sys.exit()
 
 
