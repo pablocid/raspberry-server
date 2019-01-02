@@ -29,6 +29,7 @@ def main(argv):
     try:
         s.send(instruction.encode('utf-8'))
         a=s.recv(1024).decode('utf-8')
+        print(a,'helper')
         if a == 'done':
             if len(inputname) > 0:
                 s2.send(inputname.encode('utf-8'))

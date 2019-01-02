@@ -66,7 +66,7 @@ class Cameraman():
                 break
             c, addr = s.accept()
             a = c.recv(1024).decode('utf-8')
-            print(a)
+            print(a, 'cam')
             if a == 'capture':
                 if not self.busy:
                     self.busy=True
