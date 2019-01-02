@@ -15,6 +15,7 @@ def main(argv):
             instruction = arg
         elif opt in ("-n", "--photoname"):
             inputname = arg
+    print(instruction, inputname)
     s = socket.socket()
     s.settimeout(3)
     if len(inputname)>0:
