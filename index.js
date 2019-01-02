@@ -85,8 +85,7 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    const name = req.query.name;
-    console.log('name', name);
+    const query = req.query;
     if (!query) {
         console.log("Dentro del IF");
         console.log(req.query);
