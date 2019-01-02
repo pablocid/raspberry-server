@@ -76,7 +76,7 @@ class Cameraman():
                     self.busy=False
                 else:
                     c.send('busy'.encode('utf-8'))
-            if a == 'preview':
+            elif a == 'preview':
                 if not self.busy:
                     self.busy=True
                     msg=self.capture_preview()
