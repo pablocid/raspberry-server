@@ -43,7 +43,7 @@ def main(argv):
                 print(a, end='')
                 sys.exit()
         else:
-            print('not_done', end='')
+            print(a, end='')
     except:
         print('time_out_a', end='')
         sys.exit()
