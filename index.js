@@ -85,7 +85,8 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    const query = JSON.parse(req.query);
+    const name = req.query.name;
+    console.log('name', name);
     if (!query) {
         console.log("Dentro del IF");
         console.log(req.query);
