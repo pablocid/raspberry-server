@@ -1,4 +1,7 @@
 import sys, getopt, socket, time
+
+errors_dict_google={'duplicated_name':'201', 'added_online':'200', 'added_offline':'202'}
+
 def main(argv):
     instruction = ''
     inputname = ''
@@ -37,7 +40,7 @@ def main(argv):
         print('time_out', end='')
         sys.exit()
     if len(inputname) > 0:
-        print(b, end='')
+        print(errors_dict_google[b], end='')
         sys.exit()
     else:
         print(a, end='')
