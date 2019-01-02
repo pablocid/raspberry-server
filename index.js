@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 var exec = require('child_process').execSync;
+var execAsync = require('child_process').exec;
 var spawn = require('child_process').spawn;
 const { readFile, createReadStream, unlink } = require('fs');
 
@@ -84,14 +85,20 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
+    if (!req.query || !req.query.name) {
+        res.status(201);
+        res.send();
+        return;
+    }
+    const name = req.query.name;
     const reading = createReadStream("/home/pi/capture.png");
     reading.pipe(res);
-    // const imgFile = "/home/pi/capture.png";
-    // try {
-    //     exec('python3 node_helper.py -i capture');
-    // } catch (e) {
-    //     res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
-    // }
+
+    try {
+        execAsync('python3 node_helper.py -i capture -n ' + name);
+    } catch (e) {
+        // res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
+    }
 
     // try {
     //     const reading = createReadStream(imgFile);
@@ -102,4 +109,4 @@ app.get('/capture', function (req, res) {
 
 });
 
-app.listen(3000, () => console.log('Gator app listening on port 3000!'));
+app.listen(3000, () => console.log('BerryAnalyzer App listening on port 3000!'));
