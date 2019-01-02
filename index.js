@@ -85,10 +85,11 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    console.log(req.query);
     if (!req.query || !req.query.name) {
+        console.log("Dentro del IF");
+        console.log(req.query);
         res.status(208);
-        res.send();
+        res.send('Error: el nombre no existe');
         return;
     }
     const name = req.query.name;
