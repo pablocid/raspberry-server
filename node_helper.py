@@ -20,6 +20,8 @@ def main(argv):
     if len(inputname)>0:
         s2 = socket.socket()
         s2.settimeout(3)
+    else:
+        b='no_name'
     try:
         s.connect(('localhost', 8008))
         if len(inputname)>0:
