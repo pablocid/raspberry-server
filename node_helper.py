@@ -36,8 +36,12 @@ def main(argv):
     except:
         print('time_out', end='')
         sys.exit()
-    print(a, end='')
-    sys.exit()
+    if len(inputname) > 0:
+        print(a+'_'+b, end='')
+        sys.exit()
+    else:
+        print(a, end='')
+        sys.exit()
 
 if __name__ == "__main__":
    main(sys.argv[1:])
