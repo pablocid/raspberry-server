@@ -87,7 +87,7 @@ app.get('/preview', function (req, res) {
 app.get('/capture', function (req, res) {
     console.log(req.query);
     if (!req.query || !req.query.name) {
-        res.status(208);
+        res.status(203);
         res.send();
         return;
     }
@@ -95,14 +95,15 @@ app.get('/capture', function (req, res) {
 
     try {
         console.log('sauron executing ....')
-        execAsync('python3 node_helper.py -i capture -n ' + name);
+        const status = exec('python3 node_helper.py -i capture -n ' + name);
+        console.log('current response from sauron', status);
+        res.status(parseInt(status));
+        const reading = createReadStream("/home/pi/capture.png");
+        reading.pipe(res);
     } catch (e) {
         res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
         return;
     }
-
-    const reading = createReadStream("/home/pi/capture.png");
-    reading.pipe(res);
 
     // try {
     //     const reading = createReadStream(imgFile);
