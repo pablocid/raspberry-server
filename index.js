@@ -84,19 +84,21 @@ app.get('/preview', function (req, res) {
 });
 
 app.get('/capture', function (req, res) {
-    const imgFile = "/home/pi/capture.png";
-    try {
-        exec('python3 node_helper.py -i capture');
-    } catch (e) {
-        res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
-    }
+    const reading = createReadStream("/home/pi/capture.png");
+    reading.pipe(res);
+    // const imgFile = "/home/pi/capture.png";
+    // try {
+    //     exec('python3 node_helper.py -i capture');
+    // } catch (e) {
+    //     res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
+    // }
 
-    try {
-        const reading = createReadStream(imgFile);
-        reading.pipe(res);
-    } catch (p) {
-        res.send('Error en leer el archivo imgFile localizado en /home/pi/temp.png');
-    }
+    // try {
+    //     const reading = createReadStream(imgFile);
+    //     reading.pipe(res);
+    // } catch (p) {
+    //     res.send('Error en leer el archivo imgFile localizado en /home/pi/temp.png');
+    // }
 
 });
 
