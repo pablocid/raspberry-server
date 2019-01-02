@@ -4,10 +4,10 @@ var exec = require('child_process').execSync;
 var spawn = require('child_process').spawn;
 const { readFile, createReadStream, unlink } = require('fs');
 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
 });
 
 app.get('/', (req, res) => {
@@ -49,52 +49,54 @@ app.get('/tomafoto', function (req, res) {
 });
 
 const errorMessage = [
-    { message: 'no_square_background', code: 201},
-    { message: 'wrong_marker', code: 202},
-    { message: 'no_marker', code: 203},
-    { message: 'no_objects', code: 204},
-    { message: 'time_out', code: 205},
-    { message: 'ok', code: 200},
+    { message: 'no_square_background', code: 201 },
+    { message: 'wrong_marker', code: 202 },
+    { message: 'no_marker', code: 203 },
+    { message: 'no_objects', code: 204 },
+    { message: 'time_out', code: 205 },
+    { message: 'ok', code: 200 },
 ];
 
 app.get('/preview', function (req, res) {
     const imgFile = "/home/pi/temp.png";
-    const frame = exec('python3 node_helper.py -i preview');
+    let frame;
+    try {
+        frame = exec('python3 node_helper.py -i preview');
+    } catch (e) {
+        res.send('Error en la ejecución de ->$ python3 node_helper.py -i preview')
+    }
     const msg = frame.toString();
-    // console.log('message ', msg);
-
-    // res.header("mensaje-cam", msg);
 
     for (let i = 0; i < errorMessage.length; i++) {
         let item = errorMessage[i];
         console.log(msg, item.message);
-        if(msg === item.message){
+        if (msg === item.message) {
             res.status(item.code);
             res.header("mensaje-cam", item.message);
             break;
         }
     }
-    
-    
 
     const reading = createReadStream(imgFile);
     console.log('streaming')
     reading.pipe(res);
-    // reading.on('end', () => {
-    //     console.log('transferencia terminada');
-    //     unlink(imgFile,function(err){
-    //         if(err) return console.log(err);
-    //         console.log('file deleted successfully');
-    //    });  
-    // });
+
 });
 
 app.get('/capture', function (req, res) {
     const imgFile = "/home/pi/temp.png";
-    exec('python3 node_helper.py -i capture');
+    try {
+        exec('python3 node_helper.py -i capture');
+    } catch (e) {
+        res.send('Error en la ejecucion de ->$ python3 node_helper.py -i capture');
+    }
 
-    const reading = createReadStream(imgFile);
-    reading.pipe(res);
+    try {
+        const reading = createReadStream(imgFile);
+        reading.pipe(res);
+    } catch (p) {
+        res.send('Error en leer el archivo imgFile localizado en /home/pi/temp.png');
+    }
 
 });
 
