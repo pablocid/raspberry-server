@@ -238,6 +238,11 @@ def img_check(img):
         counter+=1
     major_area=temp
 
+    try:
+        cnts[major_area]
+    except:
+        return [cnts, None]
+
     if temp > 0 and len(cv2.approxPolyDP(cnts[major_area], 0.04*cv2.arcLength(cnts[major_area],True),True))!=4:
         return [cnts, None]
 
