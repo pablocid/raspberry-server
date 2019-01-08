@@ -48,7 +48,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
         markers, contours = detect_markers_integrated(img, contours)
 
         # (optional) calculate factor pixel to cm
-        factor = 4.9 / (cv2.contourArea(markers[0].coordinates().reshape(4, 1, 2)) ** (1 / 2))
+        factor = 4.7 / (cv2.contourArea(markers[0].coordinates().reshape(4, 1, 2)) ** (1 / 2))
 
         # (optional) filter detected objects
         contours = roi_filter(img.shape[:2][::-1], contours)
@@ -66,7 +66,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
 
         # (optional) shape analysis. IMPORTANT: change this function according to the photos to be analyze
         # result, header = berry_shape(contours, factor, prev_result=result, prev_header=header)
-        result, header = rachis_shape(contours, factor, prev_result=result, prev_header=header)
+        result, header = berry_shape(contours, factor, prev_result=result, prev_header=header)
 
         if color_folder != None:
             # (optional) color balance

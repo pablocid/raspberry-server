@@ -198,6 +198,12 @@ def contour_transform(contours_list, perspective_matrix):
     return result
 
 def img_check(img):
+    """
+    Detects contours in the input image (BGR array) and looks for the white square background and the contours in it.
+    :param img: BGR numpy array.
+    :return: List with two elements. The first one is a list of contours located inside the white square. The second one
+    the contour depicting the square background (None if the square can't be determined).
+    """
     frame=img.copy()
     result = []
 
@@ -209,9 +215,6 @@ def img_check(img):
     img_roi = cv2.bitwise_or(cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1], 80, 100), cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 100, 100))
     M = np.ones((2, 2), np.uint8)
     img_roi = cv2.dilate(img_roi, M, iterations=1)
-
-    #cv2.imshow('frame', img_roi)
-    #cv2.waitKey(0)
 
     try:
         _, cnts, hierarchy = cv2.findContours(img_roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -274,11 +277,6 @@ def berry_shape(cnts, factor=1, prev_result=None, prev_header=None):
             result[counter]=result[counter]+[MA * factor, ma * factor, area*(factor**2)]
         counter+=1
     return [result, header]
-    #cnt[:, 0, 0] = cnt[:, 0, 0] - np.min(cnt[:, 0, 0])
-    #cnt[:, 0, 1] = cnt[:, 0, 1] - np.min(cnt[:, 0, 1])
-    #black=np.zeros((max(cnt[:,0,1])+1, np.max(cnt[:,0,0])+1), np.uint8)
-    #cv2.drawContours(black, [cnt], -1, 255, -1)
-    #result.append([MA * factor, ma * factor, area, np.count_nonzero(black)])
 
 def rachis_shape(cnts, factor=1, prev_result=None, prev_header=None):
     if prev_header==None:

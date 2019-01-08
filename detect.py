@@ -136,18 +136,12 @@ def detect_markers_integrated(img, contours, area_thresh=100):
     Output:
       a list of found markers. If no markers are found, then it is an empty list.
     """
-    #cv2.namedWindow('watcher', cv2.WINDOW_NORMAL)
     if len(img.shape) > 2:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     else:
         gray = img.copy()
 
     width, height = gray.shape
-    #img = cv2.Canny(img, 100, 255)
-    #M = np.ones((2, 2), np.uint8)
-    #img = cv2.dilate(img, M, iterations=1)
-
-    #contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2:]
 
     # We only keep the long enough contours
     min_contour_length = width*height / area_thresh
@@ -156,7 +150,6 @@ def detect_markers_integrated(img, contours, area_thresh=100):
     new_contours=[]
     for contour in contours:
         rect = cv2.minAreaRect(contour)
-
         if rect[1][0]*rect[1][1] <= min_contour_length:
             new_contours.append(contour)
             continue
@@ -168,15 +161,11 @@ def detect_markers_integrated(img, contours, area_thresh=100):
             new_contours.append(contour)
             continue
 
-        #warped_gray = contour_crop(gray, box.reshape(4,1,2), background=True)
         warped_gray = four_point_transform(gray, box)
         umbral = 120
         _, warped_bin = cv2.threshold(warped_gray, umbral, 255, cv2.THRESH_BINARY)
 
         marker = cv2.resize(warped_bin, (7,7), interpolation=cv2.INTER_LINEAR)
-
-        #cv2.imshow('frame', marker)
-        #cv2.waitKey(0)
 
         marker[marker < 255] = 0
         marker[marker == 255] = 1
