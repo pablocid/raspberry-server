@@ -43,7 +43,7 @@ class Entry_control():
 
     def connect_gspreads(self):
         self.client = gspread.authorize(self.creds)
-        self.sheet = self.client.open("pyTest").worksheet("Hoja_2")
+        self.sheet = self.client.open(" Laboratorio 2018-2019").worksheet("Fotos")
 
     def add_new(self, name):
         if not self.query_local(name):
@@ -143,7 +143,7 @@ class Entry_control_ondemand():
 
     def connect_gspreads(self):
         self.client = gspread.authorize(self.creds)
-        self.sheet = self.client.open("pyTest").worksheet("Hoja_2")
+        self.sheet = self.client.open(" Laboratorio 2018-2019").worksheet("Fotos")
 
     def add_new(self, name):
         if not self.query_local(name):
