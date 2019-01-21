@@ -54,7 +54,14 @@ def main(argv):
     instruction = ''
     inputname = ''
     try:
+
         opts, args = getopt.getopt(argv,"hi:n:",["instruction=", 'photoname='])
+        options = getopt.getopt(argv,"hi:n:",["instruction=", 'photoname='])
+        if len(options)>1:
+            instruction=options[0][0][1]
+            inputname=options[0][1][1]
+            inputname=inputname+' '.join(options[1:])
+            print(inputname)
     except getopt.GetoptError:
         print('-i <inputinstruction> -n <photoname>')
         sys.exit(2)
@@ -62,13 +69,7 @@ def main(argv):
         if opt == '-h':
             print('-i <inputinstruction>')
             sys.exit()
-        elif opt in ("-i", "--instruction"):
-            instruction = arg
-        elif opt in ("-n", "--photoname"):
-            if len(inputname)==0:
-                inputname = arg
-        else:
-            print(opt, arg)
+
     s = socket.socket()
     s.settimeout(3)
 
