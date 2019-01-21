@@ -60,10 +60,11 @@ def main(argv):
         if len(options)>1:
             instruction=options[0][0][1]
             inputname=options[0][1][1]
-            inputname=[inputname]+options[1:][0]
+            inputname=' '.join([inputname]+options[1:][0])
         elif len(options)==1:
             instruction = options[0][1]
             inputname = options[1][1]
+        print(instruction, inputname)
     except getopt.GetoptError:
         print('-i <inputinstruction> -n <photoname>')
         sys.exit(2)
