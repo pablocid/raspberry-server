@@ -23,7 +23,6 @@ def main_old(argv):
             print(opt, arg)
     s = socket.socket()
     s.settimeout(3)
-    print()
     if len(inputname)>0:
         s2 = socket.socket()
         s2.settimeout(3)
@@ -64,7 +63,6 @@ def main(argv):
         elif len(options)==1:
             instruction = options[0][1]
             inputname = options[1][1]
-        print(instruction, inputname)
     except getopt.GetoptError:
         print('-i <inputinstruction> -n <photoname>')
         sys.exit(2)
