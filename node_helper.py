@@ -66,6 +66,8 @@ def main(argv):
             instruction = arg
         elif opt in ("-n", "--photoname"):
             inputname = arg
+        else:
+            print(opt, arg)
     s = socket.socket()
     s.settimeout(3)
 
