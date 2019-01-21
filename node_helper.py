@@ -19,8 +19,11 @@ def main_old(argv):
             instruction = arg
         elif opt in ("-n", "--photoname"):
             inputname = arg
+        else:
+            print(opt, arg)
     s = socket.socket()
     s.settimeout(3)
+    print()
     if len(inputname)>0:
         s2 = socket.socket()
         s2.settimeout(3)
