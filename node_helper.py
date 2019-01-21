@@ -61,7 +61,7 @@ def main(argv):
             instruction=options[0][0][1]
             inputname=options[0][1][1]
             print(options[1:])
-            inputname=[inputname]+options[1:]
+            inputname=[inputname]+options[1:][0]
 
             print(inputname)
     except getopt.GetoptError:
