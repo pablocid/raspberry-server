@@ -58,12 +58,12 @@ def main(argv):
         options = getopt.getopt(argv,"hi:n:",["instruction=", 'photoname='])
         if len(options)>1:
             instruction=options[0][0][1]
-            if instruction=='preview':
+            if instruction!='preview':
                 inputname=options[0][1][1]
                 inputname=' '.join([inputname]+options[1:][0])
         elif len(options)==1:
             instruction = options[0][1]
-            if instruction=='preview':
+            if instruction!='preview':
                 inputname = options[1][1]
     except getopt.GetoptError:
         print('-i <inputinstruction> -n <photoname>')
