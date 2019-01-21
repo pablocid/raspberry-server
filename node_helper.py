@@ -65,7 +65,8 @@ def main(argv):
         elif opt in ("-i", "--instruction"):
             instruction = arg
         elif opt in ("-n", "--photoname"):
-            inputname = arg
+            if len(inputname)==0:
+                inputname = arg
         else:
             print(opt, arg)
     s = socket.socket()
