@@ -56,7 +56,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
         # UNDER CONSTRUCTION: generate a visual output
         black = np.zeros(img.shape[:2], np.uint8)
         cv2.drawContours(black, contours, -1, 255, -1)
-        cv2.imwrite(folder + n + '_watcher.png', cv2.bitwise_and(img, img, mask=black))
+        black=cv2.bitwise_and(img, img, mask=black)
 
         # prepare the header and a data collector variables
         header = ['file']
@@ -66,7 +66,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
 
         # (optional) shape analysis. IMPORTANT: change this function according to the photos to be analyze
         # result, header = berry_shape(contours, factor, prev_result=result, prev_header=header)
-        result, header = berry_shape(contours, factor, prev_result=result, prev_header=header)
+        result, header = berry_shape(contours, factor, prev_result=result, prev_header=header, fancy_output=black)
 
         if color_folder != None:
             # (optional) color balance
@@ -76,6 +76,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
             templates = template_reader(color_folder)
             result, header = tmpl_mask(img, templates, factor, contours, prev_result=result, prev_header=header)
 
+        cv2.imwrite(folder + n + '_watcher.png', black)
         if counter == 0:
             final = open(folder + 'report.tsv', 'a')
             final.write('\t'.join(header) + '\n')

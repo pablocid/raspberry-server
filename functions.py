@@ -8,6 +8,11 @@ dir_path = path.dirname(path.realpath(__file__))
 def points_distance(pt1, pt2):
     return math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
+def line_newPoint(point, length,rad):
+    x = int(point[0] + (length * math.cos(rad)))
+    y = int(point[1] + (length * math.sin(rad)))
+    return (int(x), int(y))
+
 def contour_crop(img, cnt, background=False):
     temp = img[np.min(cnt[:, 0, 1]):np.max(cnt[:,0,1]), np.min(cnt[:, 0, 0]):np.max(cnt[:,0,0])]
     if background:
@@ -258,27 +263,8 @@ def img_check(img):
         counter += 1
     return [result, cnts[major_area]]
 
-def berry_shape(cnts, factor=1, prev_result=None, prev_header=None):
-    if prev_header==None:
-        header=['major_diameter', 'minor_diameter', 'area']
-    else:
-        header=prev_header+['major_diameter', 'minor_diameter', 'area']
-    if prev_result==None:
-        result=[]
-    else:
-        result=prev_result.copy()
-    counter=0
-    for cnt in cnts:
-        area=cv2.contourArea(cnt)
-        _, (MA, ma), _ = cv2.fitEllipse(cnt)
-        if prev_result==None:
-            result.append([MA * factor, ma * factor, area*(factor**2)])
-        else:
-            result[counter]=result[counter]+[MA * factor, ma * factor, area*(factor**2)]
-        counter+=1
-    return [result, header]
-
-def rachis_shape(cnts, factor=1, prev_result=None, prev_header=None):
+def berry_shape(cnts, factor=1, prev_result=None, prev_header=None, fancy_output=None):
+    font = cv2.FONT_HERSHEY_SIMPLEX
     if prev_header==None:
         header=['width', 'height', 'area']
     else:
@@ -290,7 +276,71 @@ def rachis_shape(cnts, factor=1, prev_result=None, prev_header=None):
     counter=0
     for cnt in cnts:
         area=cv2.contourArea(cnt)
-        _, (width, height), _=cv2.minAreaRect(cnt)
+
+        try:
+            fancy_output[0]
+
+            center, (MA, ma), angles = cv2.fitEllipse(cnt)
+            cv2.ellipse(fancy_output, (center, (MA, ma), angles), (0,255,0), 1)
+            # in angles, is the angle and start angle. We need the angle.
+            point_a=line_newPoint(center, MA/2, (angles*(math.pi/180)))
+            point_b=line_newPoint(center, ma/2, ((angles+90)*(math.pi/180)))
+
+            cv2.circle(fancy_output, point_a, 5, (255, 255, 0), -1)
+            cv2.circle(fancy_output, point_b, 5, (255, 0, 255), -1)
+
+            x, y, w, h = cv2.boundingRect(cnt)
+            cv2.putText(fancy_output, 'width: ' + str(round(MA * factor, 2)), (x+w+2, y+h+2), font, 0.5,
+                        (255, 255, 0), 1, cv2.LINE_AA)
+            cv2.putText(fancy_output, 'height: ' + str(round(ma * factor, 2)), (x+w+17, y+h+17), font, 0.5, (255, 0, 255), 1,
+                        cv2.LINE_AA)
+
+
+        except:
+            _, (MA, ma), _ = cv2.fitEllipse(cnt)
+        if prev_result==None:
+            result.append([round(MA * factor, 2), round(ma * factor, 2), round(area*(factor**2), 2)])
+        else:
+            result[counter]=result[counter]+[round(MA * factor, 2), round(ma * factor, 2), round(area*(factor**2), 2)]
+        counter+=1
+    return [result, header]
+
+def rachis_shape(cnts, factor=1, prev_result=None, prev_header=None, fancy_output=None):
+    if prev_header==None:
+        header=['width', 'height', 'area']
+    else:
+        header=prev_header+['width', 'height', 'area']
+    if prev_result==None:
+        result=[]
+    else:
+        result=prev_result.copy()
+    counter=0
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    for cnt in cnts:
+        area=cv2.contourArea(cnt)
+        try:
+            fancy_output[0]
+            temp_1, (width, height), temp_2 = cv2.minAreaRect(cnt)
+            cv2.drawContours(fancy_output, [np.int0(cv2.boxPoints((temp_1, (width, height), temp_2)))], 0, (0, 255, 0),
+                             2)
+            x, y, w, h = cv2.boundingRect(cnt)
+            box = cv2.boxPoints((temp_1, (width, height), temp_2))
+            box = np.int0(box)
+            cv2.circle(fancy_output,
+                       (int(((box[1][0] - box[0][0]) / 2) + box[0][0]), int(((box[1][1] - box[0][1]) / 2) + box[0][1])),
+                       5,
+                       (255, 0, 255), -1)
+            cv2.circle(fancy_output,
+                       (int(((box[3][0] - box[0][0]) / 2) + box[0][0]), int(((box[3][1] - box[0][1]) / 2) + box[0][1])),
+                       5,
+                       (255, 255, 0), -1)
+            cv2.putText(fancy_output, 'width: ' + str(round(width * factor, 2)), (x + w + 2, y + h + 2), font, 0.5,
+                        (255, 255, 0), 1, cv2.LINE_AA)
+            cv2.putText(fancy_output, 'height: ' + str(round(height * factor, 2)), (x + w + 17, y + h + 17), font, 0.5,
+                        (255, 0, 255), 1,
+                        cv2.LINE_AA)
+        except:
+            _, (width, height), _=cv2.minAreaRect(cnt)
         if prev_result==None:
             result.append([width * factor, height * factor, area*(factor**2)])
         else:
