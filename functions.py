@@ -6,14 +6,34 @@ from  os import path, listdir
 dir_path = path.dirname(path.realpath(__file__))
 
 def points_distance(pt1, pt2):
+    """
+    Distance between two points
+    :param pt1: x,y pair 1
+    :param pt2: x,y pair 2
+    :return: float
+    """
     return math.hypot(pt2[0] - pt1[0], pt2[1] - pt1[1])
 
 def line_newPoint(point, length,rad):
+    """
+    Calculates the coordinates of a new point given an origin point, a length and an angle
+    :param point: x,y pair origin point
+    :param length: Distance to the new point
+    :param rad: float. Angle of the new point to the origin point (in radians)
+    :return: int tuple. Coordinates of the new point
+    """
     x = int(point[0] + (length * math.cos(rad)))
     y = int(point[1] + (length * math.sin(rad)))
     return (int(x), int(y))
 
 def contour_crop(img, cnt, background=False):
+    """
+    Crop an image to a contour
+    :param img: numpy array image. Image to crop
+    :param cnt: numpy contour. Selected contour to be cropped in the input image
+    :param background: bool. True for return the output image without background (only the portion in the contour)
+    :return: numpy array image. Input image cropped to the contour
+    """
     temp = img[np.min(cnt[:, 0, 1]):np.max(cnt[:,0,1]), np.min(cnt[:, 0, 0]):np.max(cnt[:,0,0])]
     if background:
         return temp
@@ -168,6 +188,12 @@ def order_points(pts):
     return rect
 
 def four_point_transform(image, pts):
+    """
+    Edited four points transformation function from imutils package.
+    :param image: numpy array image.
+    :param pts: four pairs of x,y coordinates
+    :return: List. Numpy array transformed image; perspective matrix.
+    """
     rect = order_points(pts)
     (tl, tr, br, bl) = rect
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
@@ -196,6 +222,12 @@ def roi_filter(resolution_xy, contours):
     return result
 
 def contour_transform(contours_list, perspective_matrix):
+    """
+    Apply a perspective matrix to a list of contours.
+    :param contours_list: List. Contours to be transformed
+    :param perspective_matrix: perspective matrix from the getPerspectiveTransform of the OpenCV library
+    :return: List. List of transformed contours
+    """
     result=[]
     for cnt in contours_list:
         cnt = cv2.perspectiveTransform(cnt.reshape(1, len(cnt), 2).astype('float32'), perspective_matrix)
@@ -264,6 +296,16 @@ def img_check(img):
     return [result, cnts[major_area]]
 
 def berry_shape(cnts, factor=1, prev_result=None, prev_header=None, fancy_output=None):
+    """
+    Calculates the equatorial and polar size of the berries by fitting an ellipse.
+    :param cnts: List of contours that depicts the berries
+    :param factor: value used to transform linear distance in pixels to a measurement unit. 1 by default
+    :param prev_result: List. Previous data corresponding to each berry where the new data columns are going to be
+    appended. If not given, returns a new list
+    :param prev_header: List. Where the new data headers are going to be appended
+    :param fancy_output: Numpy array image. Image to be edited with a visual output of the acquired data.
+    :return: List. Data obtained for each berry; header for the data acquired.
+    """
     font = cv2.FONT_HERSHEY_SIMPLEX
     if prev_header==None:
         header=['width', 'height', 'area']
