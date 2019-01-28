@@ -1,7 +1,7 @@
 import cv2
 from detect import detect_markers_integrated
 from functions import roi_filter, colorBalance, template_reader, tmpl_mask, img_check, contour_transform, \
-    four_point_transform, berry_shape
+    four_point_transform, berry_shape, factor_calculator
 import time
 import os
 import numpy as np
@@ -11,7 +11,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
     Hace uso de las funciones en functions.py para analizar las fotos de una carpeta. ¡¡¡Ver comentario en linea 67!!!
     :param folder: str. path to de folder containing the photos. The photos were previously checked by the Raspberry Pi.
     :param color_folder: str. path to the folder containing the tsv templates for color analysis. If not given, only
-    shape analysis will be performed.
+    shape analysis is going to be performed.
     :param keyword: List. Strings of keywords for filtering the photos to be analyzed in the given folder.
     :return: None. Writes a report.tsv file containing the data obtained from the photos.
     """
@@ -48,7 +48,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
         markers, contours = detect_markers_integrated(img, contours)
 
         # (optional) calculate factor pixel to cm
-        factor = 4.7 / (cv2.contourArea(markers[0].coordinates().reshape(4, 1, 2)) ** (1 / 2))
+        factor = factor_calculator(markers, real_border=5.0)
 
         # (optional) filter detected objects
         contours = roi_filter(img.shape[:2][::-1], contours)

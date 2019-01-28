@@ -44,6 +44,18 @@ def contour_crop(img, cnt, background=False):
     return cv2.bitwise_and(temp, temp, mask=black)
 
 def tmpl_mask(img, tmpls_parsed, factor=1, cnts=None, prev_result=None, prev_header=None):
+    """
+    Apply the 32x32 color templates to the input image.
+    :param img: numpy array image. Input image
+    :param tmpls_parsed: List. Parsed templates
+    :param factor: value used to transform linear distance in pixels to a measurement unit. 1 by default
+    :param cnts: List. Contours that defines the objects in the input image to be analyzed. If not given, a whole image
+    analysis is going to be performed.
+    :param prev_result: List. Previous data corresponding to each berry where the new data columns are going to be
+    appended. If not given, returns a new list
+    :param prev_header: List. Data obtained for each berry; header for the data acquired.
+    :return:
+    """
     try:
         cnts[0][0]
     except:
@@ -96,6 +108,11 @@ def tmpl_mask(img, tmpls_parsed, factor=1, cnts=None, prev_result=None, prev_hea
     return [result, header]
 
 def template_reader(directory):
+    """
+    Parse the colour templates from a folder
+    :param directory: path to the folder containing the colour template files
+    :return: list. For each file, the name of the colour template files and the values are appended to the returned list
+    """
     result=[]
     if directory[-1]!='/':
         directory+='/'
@@ -119,28 +136,10 @@ def template_reader(directory):
 
 def colorBalance(img, marker_coords):
     """
-    Color correction based on a coloured template as objective. Be sure the input image shows the paper sheet covering
-    the whole frame (paper sheet background only).
+    Color correction based on a coloured template as objective. Uses the marker coordinates to find the reference
 
-    The test file (test if the average BGR values of the color template are closer to the template found in the test
-    image after the colorBalance)
-
-    >>> reference = cv2.imread('color_reference2.jpg')
-    >>> reference_values=[np.average(reference[:,:,n]) for n in range(3)]
-    >>> image = cv2.imread('nts_cb_test.png')
-    >>> image_values=[np.average(image[16:62, 22:68, n]) for n in range(3)]
-    >>> difference=[[],[]]
-    >>> for n in range(3):
-    ...     difference[0].append(abs(reference_values[n]-image_values[n]))
-    >>> image = colorBalance(image)
-    >>> image_values=[np.average(image[16:62, 22:68, n]) for n in range(3)]
-    >>> for n in range(3):
-    ...     difference[1].append(abs(reference_values[n]-image_values[n]))
-    ...     print(difference[0][n]>difference[1][n], end=',')
-    True,True,True,
-
-    :param img: numpy BGR array. The black square in the frame should measure 30x30 to 100x100 px.
-    :return: Colours corrected image as a numpy BGR array.
+    :param img: numpy array image. Input image where the color correction is applied
+    :return: numpy array image. Corrected input image
     """
     color_reference = path.join(dir_path, "reference.png")
     colors = ['b', 'g', 'r']
@@ -176,6 +175,9 @@ def colorBalance(img, marker_coords):
     for n in range(len(colors)):
         img_ch[n] = cv2.LUT(img_ch[n], lut[n]).astype(np.uint8)
     return cv2.merge(img_ch)
+
+def factor_calculator(markers_list, real_border=1):
+    return (real_border*0.94) / (cv2.contourArea(markers_list[0].coordinates().reshape(4, 1, 2)) ** (1 / 2))
 
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
