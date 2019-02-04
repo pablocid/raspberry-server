@@ -90,7 +90,10 @@ def main(argv):
         print('time_out', end='')
         sys.exit()
     if len(inputname) > 0:
-        print(errors_dict_google[b], end='')
+        if gsync == 'true':
+            print(errors_dict_google[b], end='')
+        else:
+            print('200', end='')
         sys.exit()
     else:
         print(a, end='')
