@@ -93,7 +93,7 @@ def main(argv):
         if gsync == 'true':
             print(errors_dict_google[b], end='')
         else:
-            print('200', end='')
+            print('202', end='')
         sys.exit()
     else:
         print(a, end='')
