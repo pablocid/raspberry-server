@@ -92,10 +92,17 @@ app.get('/capture', function (req, res) {
         return;
     }
     const name = req.query.name;
+    let gs = true;
+    if (req.query.gs) {
+        gs = req.query.gs === 'true' ? true : false;
+        if (req.query.gs === 'true') { gs = true }
+        else if (req.query.gs === 'false') { gs = false }
+        else { gs = true; }
+    }
 
     try {
         console.log('sauron executing ....')
-        const arg = 'python3 node_helper.py -i capture -n "' + name + '"';
+        const arg = 'python3 node_helper.py -i capture -n "' + name + '" -g "' + gs + '"';
         const status = exec(arg);
         console.log('current response from sauron', status);
         res.status(parseInt(status));
