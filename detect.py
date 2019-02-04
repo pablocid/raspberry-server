@@ -6,7 +6,6 @@ except ImportError:
 import numpy as np
 from ar_markers.coding import decode, extract_hamming_code
 from marker import HammingMarker
-from functions import contour_crop
 
 BORDER_COORDINATES = [
     [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [1, 0], [1, 6], [2, 0], [2, 6], [3, 0],

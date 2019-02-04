@@ -1,7 +1,7 @@
 import cv2
 from detect import detect_markers_integrated
 from functions import roi_filter, colorBalance, template_reader, tmpl_mask, img_check, contour_transform, \
-    four_point_transform, berry_shape, factor_calculator
+    four_point_transform, berry_shape, factor_calculator, rachis_shape
 import time
 import os
 import numpy as np
@@ -53,6 +53,8 @@ def bash_analysis(folder, color_folder=None, keyword=None):
         # (optional) filter detected objects
         contours = roi_filter(img.shape[:2][::-1], contours)
 
+        #img = colorBalance(img, markers[0].coordinates())
+
         # UNDER CONSTRUCTION: generate a visual output
         black = np.zeros(img.shape[:2], np.uint8)
         cv2.drawContours(black, contours, -1, 255, -1)
@@ -70,7 +72,7 @@ def bash_analysis(folder, color_folder=None, keyword=None):
 
         if color_folder != None:
             # (optional) color balance
-            img = colorBalance(img, markers[0].coordinates())
+            #img = colorBalance(img, markers[0].coordinates())
 
             # (optional) color analysis
             templates = template_reader(color_folder)
