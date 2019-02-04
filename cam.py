@@ -18,7 +18,7 @@ CONTRAST=0
 try:
     from picamera import PiCamera
     ips = check_output('ifconfig')
-    if '192.168.50.4' in ips.decode("UTF-8"):
+    if '192.168.50.168' in ips.decode("UTF-8"):
         BRIGHT = 40
         ISO = 100
         SHUTTER = 18346
