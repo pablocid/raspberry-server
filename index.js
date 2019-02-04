@@ -95,7 +95,8 @@ app.get('/capture', function (req, res) {
 
     try {
         console.log('sauron executing ....')
-        const status = exec('python3 node_helper.py -i capture -n ' + name);
+        const arg = 'python3 node_helper.py -i capture -n "' + name + '"';
+        const status = exec(arg);
         console.log('current response from sauron', status);
         res.status(parseInt(status));
         const reading = createReadStream("/home/pi/capture.png");
