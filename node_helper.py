@@ -52,26 +52,24 @@ def main_old(argv):
 def main(argv):
     instruction = ''
     inputname = ''
+    gsync='true'
     try:
-
-        opts, args = getopt.getopt(argv,"hi:n:",["instruction=", 'photoname='])
-        options = getopt.getopt(argv,"hi:n:",["instruction=", 'photoname='])
-        if len(options)>1:
-            instruction=options[0][0][1]
-            if instruction!='preview':
-                inputname=options[0][1][1]
-                inputname=' '.join([inputname]+options[1:][0])
-        elif len(options)==1:
-            instruction = options[0][1]
-            if instruction!='preview':
-                inputname = options[1][1]
+        opts, args = getopt.getopt(argv,"hi:n:g:",["instruction=", 'photoname=', 'gsync='])
     except getopt.GetoptError:
-        print('-i <inputinstruction> -n <photoname>')
+        print('-i <inputinstruction> -n <photoname> -g <gsync>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print('-i <inputinstruction>')
             sys.exit()
+        elif opt in ("-i", "--instruction"):
+            instruction = arg
+        elif opt in ("-n", "--photoname"):
+            inputname = arg
+        elif opt in ("-g", "--gsync"):
+            gsync = arg
+        else:
+            print(opt, arg)
 
     s = socket.socket()
     s.settimeout(3)
@@ -85,8 +83,9 @@ def main(argv):
         a=s.recv(1024).decode('utf-8')
         if 'done' in a:
             if len(inputname) > 0:
-                s2 = Entry_control_ondemand(entry=inputname)
-                b=s2.ondemand()
+                if gsync=='true':
+                    s2 = Entry_control_ondemand(entry=inputname)
+                    b=s2.ondemand()
     except:
         print('time_out', end='')
         sys.exit()
