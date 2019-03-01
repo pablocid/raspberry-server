@@ -45,9 +45,9 @@ except:
 
 
 class Cameraman():
-    def __init__(cam_id, self):
+    def __init__(self):
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
-        if cam_id=='137.22.0.37':
+        if CAM=='137.22.0.37':
             self.camera.iso = ISO
             time.sleep(2)
             self.camera.shutter_speed = SHUTTER
@@ -156,4 +156,4 @@ class Cameraman():
         pass
 
 if __name__ == '__main__':
-    Cameraman(cam_id=CAM)
+    Cameraman()
