@@ -28,6 +28,7 @@ try:
         ISO = 200
         SHUTTER = 60000
         AWB_GAINS = (Fraction(57, 32), Fraction(195, 128))
+        print('cam3')
 
     else:
         BRIGHT=38
