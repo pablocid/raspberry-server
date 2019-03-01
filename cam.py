@@ -46,7 +46,6 @@ except:
 
 class Cameraman():
     def __init__(cam_id, self):
-        self.cam_id=cam_id
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
         if cam_id=='137.22.0.37':
             self.camera.iso = ISO
