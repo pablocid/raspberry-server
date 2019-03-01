@@ -14,6 +14,7 @@ ISO=0
 SHUTTER=0
 AWB_GAINS=0
 CONTRAST=0
+CAM=''
 
 try:
     from picamera import PiCamera
@@ -23,18 +24,20 @@ try:
         ISO = 100
         SHUTTER = 18346
         AWB_GAINS = (Fraction(57, 32), Fraction(195, 128))
+        CAM='192.168.50.168'
     elif '137.22.0.37' in ips.decode("UTF-8"):
         BRIGHT = 40
-        ISO = 400
-        SHUTTER = 60000
+        ISO = 200
+        SHUTTER = 20000
         AWB_GAINS = (Fraction(57, 32), Fraction(195, 128))
-
+        CAM = '137.22.0.37'
     else:
         BRIGHT=38
         ISO = 200
         SHUTTER = 10000
         AWB_GAINS = (Fraction(52, 32), Fraction(193, 128))
         CONTRAST=50
+        CAM = '192.168.50.71'
 except:
     pass
     
@@ -42,16 +45,27 @@ except:
 
 
 class Cameraman():
-    def __init__(self):
+    def __init__(cam_id, self):
+        self.cam_id=cam_id
         self.camera = PiCamera(resolution=(1640, 1232), framerate=15)
-        #self.camera.iso = ISO
-        time.sleep(2)
-        #self.camera.shutter_speed = SHUTTER
-        #self.camera.exposure_mode = 'off'
-        self.camera.awb_mode = 'off'
-        self.camera.awb_gains = AWB_GAINS # red/blue
-        #self.camera.brightness = BRIGHT
-        self.camera.contrast = CONTRAST
+        if cam_id=='137.22.0.37':
+            self.camera.iso = ISO
+            time.sleep(2)
+            self.camera.shutter_speed = SHUTTER
+            self.camera.exposure_mode = 'off'
+            self.camera.awb_mode = 'off'
+            self.camera.awb_gains = AWB_GAINS  # red/blue
+            # self.camera.brightness = BRIGHT
+            self.camera.contrast = CONTRAST
+        else:
+            #self.camera.iso = ISO
+            time.sleep(2)
+            #self.camera.shutter_speed = SHUTTER
+            #self.camera.exposure_mode = 'off'
+            self.camera.awb_mode = 'off'
+            self.camera.awb_gains = AWB_GAINS # red/blue
+            #self.camera.brightness = BRIGHT
+            self.camera.contrast = CONTRAST
         self.rawCapture = np.empty((1232, 1664, 3), dtype=np.uint8)
 
         self.busy=True
@@ -143,4 +157,4 @@ class Cameraman():
         pass
 
 if __name__ == '__main__':
-    Cameraman()
+    Cameraman(cam_id=CAM)
