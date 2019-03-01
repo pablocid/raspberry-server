@@ -26,7 +26,7 @@ try:
     elif '137.22.0.37' in ips.decode("UTF-8"):
         BRIGHT = 40
         ISO = 200
-        SHUTTER = 30000
+        SHUTTER = 60000
         AWB_GAINS = (Fraction(57, 32), Fraction(195, 128))
 
     else:
