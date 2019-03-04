@@ -116,9 +116,10 @@ def img_check(img):
     w_a, h_a = frame.shape[1], frame.shape[0]
 
     new_x = 870 / img.shape[1]
-    img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_LINEAR)
+    img = cv2.resize(img, None, None, fx=new_x, fy=new_x, interpolation=cv2.INTER_AREA)
     img = cv2.GaussianBlur(img, (5, 5), 0)
-    img_roi = cv2.bitwise_or(cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1], 80, 100), cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 100, 100))
+    img_roi = cv2.bitwise_or(cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:,:,1], 80, 100),
+                             cv2.Canny(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), 100, 150))
     M = np.ones((2, 2), np.uint8)
     img_roi = cv2.dilate(img_roi, M, iterations=1)
 
@@ -128,38 +129,25 @@ def img_check(img):
         cnts, hierarchy = cv2.findContours(img_roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     counter = 0
     major_area=0
-    temp=0
+    temp=w_a*h_a
     for c in cnts:
         c[:, 0, 0] = c[:, 0, 0] // new_x
         c[:, 0, 1] = c[:, 0, 1] // new_x
         x, y, w, h = cv2.boundingRect(c)
-        if (w*h)>=(w_a*h_a)*0.6:
-            if temp<(w * h):
-                temp=(w * h)
-                major_area=counter
+        if (w*h)>=(w_a*h_a)*0.4:
+            if temp>(w * h):
+                if len(cv2.approxPolyDP(c, 0.04*cv2.arcLength(c,True),True))==4:
+                    temp=(w * h)
+                    major_area=counter
         counter += 1
-    comparator=cv2.contourArea(cnts[major_area])
 
-    counter=0
-    for n in hierarchy[0]:
-        if n[3]==major_area and counter!=major_area and cv2.contourArea(cnts[counter])>comparator*0.7:
-            temp=counter
-        counter+=1
-    major_area=temp
-
-    try:
-        cnts[major_area]
-    except:
+    if temp==w_a*h_a:
         return [cnts, None]
-
-    if temp > 0 and len(cv2.approxPolyDP(cnts[major_area], 0.04*cv2.arcLength(cnts[major_area],True),True))!=4:
-        return [cnts, None]
-
     cnts[major_area]=cv2.approxPolyDP(cnts[major_area], 0.04*cv2.arcLength(cnts[major_area],True),True)
     counter = 0
 
     for n in hierarchy[0]:
         if n[3] == major_area and counter != major_area and len(cnts[counter])>10:
-            result.append(cnts[counter])
+            result.append(cv2.convexHull(cnts[counter]))
         counter += 1
     return [result, cnts[major_area]]
