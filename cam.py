@@ -27,8 +27,8 @@ try:
         CAM='192.168.50.168'
     elif '137.22.0.37' in ips.decode("UTF-8"):
         BRIGHT = 40
-        ISO = 200
-        SHUTTER = 25000
+        ISO = 100
+        SHUTTER = 45000
         AWB_GAINS = (Fraction(57, 32), Fraction(195, 128))
         CAM = '137.22.0.37'
     else:
